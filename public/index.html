@@ -10,11 +10,11 @@
     <meta name="apple-mobile-web-app-title" content="OOTD" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#0a0a0a" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
 
     <!-- Icons -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/x-icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
 
     <!-- SEO -->
     <meta name="description" content="Rate your outfit with AI. Brutally honest scores, style breakdowns, and upgrade tips." />
@@ -27,13 +27,5 @@
   </head>
   <body style="margin:0;padding:0;background:#fafaf8;">
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js');
-        });
-      }
-    </script>
   </body>
 </html>
