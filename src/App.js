@@ -13,7 +13,7 @@ const isValidEmail = e => {
 
 const store = {
   get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-  set: (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  set: (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
   del: k => { try { localStorage.removeItem(k); } catch {} },
 };
 
@@ -122,7 +122,8 @@ function useAuth() {
     if (password.length < 6) return "Password must be at least 6 characters.";
     if (getUserData(norm)) return "An account with this email already exists.";
     const now = new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"});
-    setUserData(norm, {name,password,uploads:[],weekStart:getWeekStart(),totalRatings:0,joinedAt:now,pro:false,avatar:null,history:[],onboarded:false});
+    const ok = store.set(`ootd_user_${norm}`, {name,password,uploads:[],weekStart:getWeekStart(),totalRatings:0,joinedAt:now,pro:false,avatar:null,history:[],onboarded:false});
+    if(!ok) return "Couldn't save your account. Try clearing some browser storage and signing up again.";
     const s = {email:norm, name}; store.set("ootd_u", s); setUser(s); return null;
   };
   const logout = () => { store.del("ootd_u"); setUser(null); };
@@ -1087,7 +1088,15 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
     setTimeout(()=>{
       const name=nameRef.current?.value||"", email=emailRef.current?.value||"", pw=pwRef.current?.value||"";
       const err = mode==="login"?onAuth.login(email,pw):onAuth.signup(name,email,pw);
-      if(err)setError(err); setLoading(false);
+      if(err){
+        if(mode==="login"&&err==="No account found. Please sign up."){
+          setMode("signup"); setAcceptedPP(false); setAcceptedTOS(false);
+          setError("No account found — enter your name below to sign up.");
+        } else {
+          setError(err);
+        }
+      }
+      setLoading(false);
     },500);
   },[mode,onAuth]);
 
