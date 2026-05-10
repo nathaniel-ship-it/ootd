@@ -329,14 +329,13 @@ function ReEngagementBanner({email, dark, onRate}) {
   const lastDate = u.history?.[0]?.date;
   const daysSince = lastDate ? Math.floor((Date.now()-new Date(lastDate+"," + new Date().getFullYear()).getTime())/(1000*60*60*24)) : 99;
   if (daysSince < 1) return null;
-  const avg = Math.round(history.reduce((a,r)=>a+r.score,0)/history.length);
   const trend = history.length>=2 ? history[0].score-history[1].score : 0;
   const msgs = [
     {icon:"📉", title:`Your score dropped ${Math.abs(trend)} pts`, sub:"Last outfit didn't hit. Come back and redeem yourself.", show: trend<-3},
     {icon:"🔥", title:"3-day streak broken", sub:"You've been on a roll. Don't lose your momentum.", show: daysSince>=3&&history.length>=3},
-    {icon:"📊", title:`Your avg is ${avg}/100`, sub:"Rate today's fit and keep building your style profile.", show: true},
   ];
-  const msg = msgs.find(m=>m.show)||msgs[msgs.length-1];
+  const msg = msgs.find(m=>m.show);
+  if (!msg) return null;
   return (
     <div style={{background:T.card,borderRadius:16,padding:16,marginBottom:16,display:"flex",alignItems:"center",gap:14,boxShadow:dark?"none":"0 2px 16px rgba(0,0,0,0.12)",cursor:"pointer"}} onClick={onRate}>
       <div style={{fontSize:28,flexShrink:0}}>{msg.icon}</div>
@@ -795,7 +794,7 @@ function PaywallModal({onClose,onSubscribe}) {
 }
 
 // ── Profile Page ──
-function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onCancelSub}) {
+function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onCancelSub,onSignOut}) {
   const [u, setU] = useState(()=>getUserData(user.email)||{});
   const avatarRef = useRef();
   const [avatar,setAvatarLocal] = useState(u.avatar||null);
@@ -803,11 +802,18 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
   const [showDelete,setShowDelete] = useState(false);
   const [showCancelConfirm,setShowCancelConfirm] = useState(false);
   const [showAccountSettings,setShowAccountSettings] = useState(false);
-  const handleAvatarFile = file => {
+  const handleAvatarFile = async file => {
     if (!file?.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = e => { setAvatarLocal(e.target.result); setAvatar(user.email, e.target.result); };
-    reader.readAsDataURL(file);
+    const MAX = 256;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(MAX/bitmap.width, MAX/bitmap.height, 1);
+    const w = Math.round(bitmap.width*scale), h = Math.round(bitmap.height*scale);
+    const c = document.createElement("canvas"); c.width=w; c.height=h;
+    c.getContext("2d").drawImage(bitmap,0,0,w,h);
+    bitmap.close();
+    const dataUrl = c.toDataURL("image/jpeg", 0.82);
+    setAvatarLocal(dataUrl);
+    setAvatar(user.email, dataUrl);
   };
   return (
     <div className="fadeUp">
@@ -827,7 +833,7 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
         {isPro&&<div style={{display:"inline-block",marginTop:10,background:"linear-gradient(135deg,#FFD166,#f0932b)",color:"#000",fontSize:9,padding:"4px 14px",borderRadius:20,letterSpacing:2,fontWeight:700}}>PRO ✦</div>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-        {[["Total",u.totalRatings||0],["Since",u.joinedAt||"Today"],["Week",`${isPro?"∞":(2-(usageLeft===999?0:usageLeft))}/${isPro?"∞":2}`],["Status",isPro?"Pro ✦":"Free"]].map(([label,val])=>(
+        {[["Total",u.totalRatings||0],["Since",u.joinedAt||"Today"],["Week",isPro?"∞":`${usageLeft}/1`],["Status",isPro?"Pro ✦":"Free"]].map(([label,val])=>(
           <div key={label} style={{background:dark?T.bg2:T.card,borderRadius:14,padding:18,boxShadow:dark?"none":"0 2px 16px rgba(0,0,0,0.1)"}}>
             <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>{label}</div>
             <div style={{fontSize:15,fontFamily:"'Playfair Display',Georgia,serif",color:label==="Status"&&isPro?"#FFD166":dark?T.text:T.cardText}}>{val}</div>
@@ -874,8 +880,8 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
         );
       })()}
       <div style={{background:dark?T.bg2:T.card,borderRadius:14,overflow:"hidden",boxShadow:dark?"none":"0 2px 16px rgba(0,0,0,0.1)"}}>
-        {[["Account Settings","→","account"],["Privacy Policy","→","privacy"],["Terms of Service","→","terms"],["Delete Account","⚠","delete"]].map(([label,icon,action],i)=>(
-          <div key={label} onClick={()=>{if(action==="delete")setShowDelete(true);else if(action==="account")setShowAccountSettings(true);else setLegalModal(action);}} style={{padding:"15px 18px",borderBottom:i<3?`1px solid ${dark?T.border:T.cardText+"11"}`:"none",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
+        {[["Sign Out","→","signout"],["Account Settings","→","account"],["Privacy Policy","→","privacy"],["Terms of Service","→","terms"],["Delete Account","⚠","delete"]].map(([label,icon,action],i)=>(
+          <div key={label} onClick={()=>{if(action==="delete")setShowDelete(true);else if(action==="account")setShowAccountSettings(true);else if(action==="signout")onSignOut();else setLegalModal(action);}} style={{padding:"15px 18px",borderBottom:i<4?`1px solid ${dark?T.border:T.cardText+"11"}`:"none",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
             <span style={{fontSize:12,color:label==="Delete Account"?"#ff6666":dark?T.text:T.cardText}}>{label}</span>
             <span style={{fontSize:12,color:dark?T.faint:`${T.cardText}33`}}>{icon}</span>
           </div>
@@ -1229,6 +1235,11 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
 
   useEffect(()=>{ scheduleNotifications(user.email); },[]);
 
+  useEffect(()=>{
+    setUsageLeft(getUsageLeft(user.email));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[tab]);
+
   const handleFile = useCallback(async file=>{
     if(!file?.type.startsWith("image/")) return;
     const MAX=1024;
@@ -1390,7 +1401,7 @@ Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
   const dColor = dark?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.15)";
 
   return (
-    <div style={{minHeight:"100vh",background:T.bg,color:T.text,fontFamily:"'DM Mono',monospace",display:"flex",flexDirection:"column",alignItems:"center",padding:"0 16px 100px"}}>
+    <div style={{height:"100vh",background:T.bg,color:T.text,fontFamily:"'DM Mono',monospace",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
@@ -1403,6 +1414,7 @@ Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
 
       {showOnboarding && <Onboarding onDone={handleOnboardDone} dark={dark}/>}
 
+      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",alignItems:"center",padding:"0 16px"}}>
       {/* Header */}
       <div style={{width:"100%",maxWidth:420,padding:"28px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between"}}>
         <div style={{position:"relative"}}>
@@ -1599,11 +1611,13 @@ Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
 
         {tab==="history"&&<HistoryPage email={user.email} dark={dark} onRate={()=>setTab("rate")} isPro={isPro} onUpgrade={()=>setShowPaywall(true)}/>}
         {tab==="profile_tab"&&<StyleProfilePage email={user.email} dark={dark} isPro={isPro} onUpgrade={()=>setShowPaywall(true)}/>}
-        {tab==="profile"&&<ProfilePage user={user} onUpgrade={()=>setShowPaywall(true)} isPro={isPro} usageLeft={usageLeft} setAvatar={setAvatar} dark={dark} onDelete={logout} onCancelSub={()=>{removePro(user.email);setIsPro(false);setUsageLeft(getUsageLeft(getMetaData(user.email)||getUserData(user.email)||{}));}}/>}
+        {tab==="profile"&&<ProfilePage user={user} onUpgrade={()=>setShowPaywall(true)} isPro={isPro} usageLeft={usageLeft} setAvatar={setAvatar} dark={dark} onDelete={logout} onSignOut={logout} onCancelSub={()=>{removePro(user.email);setIsPro(false);setUsageLeft(getUsageLeft(getMetaData(user.email)||getUserData(user.email)||{}));}}/>}
+      </div>
+
       </div>
 
       {/* Bottom Nav */}
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:T.navBg,backdropFilter:"blur(20px)",borderTop:`1px solid ${T.navBorder}`,display:"flex",justifyContent:"center",zIndex:50}}>
+      <div style={{background:T.navBg,backdropFilter:"blur(20px)",borderTop:`1px solid ${T.navBorder}`,display:"flex",justifyContent:"center",flexShrink:0,paddingBottom:"env(safe-area-inset-bottom)"}}>
         <div style={{display:"flex",width:"100%",maxWidth:420}}>
           {[["rate","✦","Rate"],["history","◈","History"],["profile_tab","◎","Style"],["profile","○","Profile"]].map(([t,icon,label])=>(
             <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"12px 0",background:"none",border:"none",color:tab===t?T.text:T.faint,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,transition:"color 0.15s"}}>
