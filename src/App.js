@@ -128,7 +128,7 @@ function useAuth() {
   const logout = () => { store.del("ootd_u"); setUser(null); };
   const setPro = email => {
     const u=getUserData(email); if(!u) return;
-    const proSince = u.proSince || Date.now();
+    const proSince = Date.now();
     setUserData(email,{...u,pro:true,proSince});
     const m=getMetaData(email); if(m) setMetaData(email,{...m,pro:true,proSince});
   };
