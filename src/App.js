@@ -1410,10 +1410,11 @@ Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
   const dColor = dark?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.15)";
 
   return (
-    <div style={{height:"100vh",background:T.bg,color:T.text,fontFamily:"'DM Mono',monospace",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div className="ootd-shell" style={{background:T.bg,color:T.text,fontFamily:"'DM Mono',monospace",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
+        .ootd-shell{height:100vh;height:100dvh}
         @keyframes pulse{0%,100%{opacity:0.15;transform:scale(0.85)}50%{opacity:1;transform:scale(1.15)}}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -1481,19 +1482,6 @@ Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
                   </div>
                 }
                 <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])}/>
-                {!imageB64&&(getUserData(user.email)?.totalRatings||0)===0&&(
-                  <div style={{marginTop:16,textAlign:"center"}}>
-                    <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:14}}>
-                      {[["72","everyday"],["88","date night"],["61","work"]].map(([score,label])=>(
-                        <div key={label} style={{background:T.card,borderRadius:12,padding:"10px 14px",textAlign:"center",boxShadow:dark?"none":"0 2px 12px rgba(0,0,0,0.1)"}}>
-                          <div style={{fontSize:18,fontWeight:800,fontFamily:"'Playfair Display',Georgia,serif",color:Number(score)>=80?(dark?"#a8ff78":"#2a7a2a"):Number(score)>=60?(dark?"#FFD166":"#a06800"):(dark?"#e05555":"#b83030")}}>{score}</div>
-                          <div style={{fontSize:8,color:`${T.cardText}55`,letterSpacing:1,textTransform:"uppercase",marginTop:2}}>{label}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <p style={{fontSize:11,color:T.faint,letterSpacing:1}}>What will yours be?</p>
-                  </div>
-                )}
                 {imageB64&&<button onClick={analyze} style={{width:"100%",background:dark?"#fff":"#111",color:dark?"#000":"#fff",border:"none",borderRadius:14,padding:"16px 0",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",boxShadow:dark?"none":"0 4px 20px rgba(0,0,0,0.15)"}}>Rate My Outfit →</button>}
                 <div style={{textAlign:"center",marginTop:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
                   <Star color={dColor} size={12}/><p style={{fontSize:9,color:T.faint,letterSpacing:3,textTransform:"uppercase"}}>Brutal · Honest · Accurate</p><Star color={dColor} size={12}/>
