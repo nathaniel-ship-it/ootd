@@ -30,6 +30,7 @@ jobs:
       - run: npm run build
         env:
           CI: false
+          REACT_APP_API_URL: https://ootd-api.ootdsupport.workers.dev
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:

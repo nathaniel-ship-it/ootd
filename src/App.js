@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, memo } from "react";
 import { initPurchases, purchasePro, checkProStatus, restorePurchases, isNative, manageSubscription } from "./purchases";
+import { requestNotificationPermission, scheduleDailyNotification, initNotifications } from "./notifications";
 import PRIVACY_POLICY_HTML from "./privacyPolicy";
 
 const OCCASIONS = ["everyday","date night","work","party","gym","travel"];
@@ -899,11 +900,17 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
 function NotificationPrompt({onDone, dark}) {
   const [status, setStatus] = useState("idle"); // idle | granted | denied
   const request = async () => {
-    if (!("Notification" in window)) { setStatus("denied"); return; }
-    const perm = await Notification.requestPermission();
-    setStatus(perm==="granted"?"granted":"denied");
-    if (perm==="granted") {
-      setTimeout(()=>new Notification("OOTD 👗", {body:"Rate your outfit today and keep your streak alive!"}), 500);
+    if (isNative()) {
+      const granted = await requestNotificationPermission();
+      setStatus(granted ? "granted" : "denied");
+      if (granted) await scheduleDailyNotification();
+    } else {
+      if (!("Notification" in window)) { setStatus("denied"); return; }
+      const perm = await Notification.requestPermission();
+      setStatus(perm==="granted"?"granted":"denied");
+      if (perm==="granted") {
+        setTimeout(()=>new Notification("OOTD 👗", {body:"Rate your outfit today and keep your streak alive!"}), 500);
+      }
     }
   };
   return (
@@ -1242,7 +1249,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  useEffect(()=>{ scheduleNotifications(user.email); },[]);
+  useEffect(()=>{ scheduleNotifications(user.email); initNotifications(); },[]);
 
   useEffect(()=>{
     setUsageLeft(getUsageLeft(user.email));
@@ -1274,35 +1281,15 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
     if(!imageB64) return;
     if(usageLeft<=0){setShowPaywall(true);return;}
     setScreen("analyzing");
-    try {
-      const prompt = `You are a hype-man fashion stylist who loves real people's style. Rate this outfit 0-100. You know ALL modern aesthetics: streetwear, old money, clean girl, Y2K, quiet luxury, techwear, athleisure, and more.
-
-SCORING — be generous, people worked hard on their look:
-- 90-100: Exceptional. Cohesive, intentional, memorable. Reserve for truly great execution.
-- 80-89: Really good. Well put-together, clear aesthetic, confident.
-- 72-79: Solid look. Good foundation, minor things could be tweaked.
-- 65-71: Decent. Pieces work, just needs a bit more intention.
-- Below 65: ONLY if there are obvious visible coordination issues.
-
-RULES (strictly follow):
-- ANY clean, effort-showing outfit starts at 75 minimum
-- Intentional streetwear, minimalist, or athleisure = 78+ minimum
-- Neutral color story (black/white/navy/grey/beige/cream) = color score 21+/25
-- Good silhouette or proportional fit = fit score 21+/25
-- Accessories present = automatic +3 points
-- Matching shoes to vibe = automatic +2 points
-- Layering done well = automatic +3 points
-- NEVER give below 65 unless there are actual clashing colors or broken proportions visible
-- Hype them up in the verdict — be the supportive friend who also keeps it real
-- vibe: 3-5 punchy words capturing the exact aesthetic, e.g. "Dark Academia Clean Edge"
-
-Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
-{"score":82,"breakdown":{"fit":22,"color":21,"style":20,"occasion":19},"vibe":"Clean Quiet Luxury","verdict":"Intentional neutral palette doing the work here. The proportions are well-balanced and the color story is cohesive — you clearly have a point of view.","tags":["minimalist","clean","elevated"],"pros":["Strong color cohesion","Proportions are working perfectly"],"cons":["One accessory away from elite tier","Could experiment with texture"],"upgrade":"A simple gold chain or leather belt would take this to a 90+ immediately."}`;
-      const response = await window.puter.ai.chat(prompt, `data:image/jpeg;base64,${imageB64}`, {model:"gpt-4o"});
-      const text = typeof response==="string" ? response : response?.message?.content || response?.toString() || JSON.stringify(response);
-      const match = text.replace(/```json|```/g,"").trim().match(/\{[\s\S]*\}/);
-      if(!match) throw new Error("no json found in: " + text.slice(0,100));
-      const p = JSON.parse(match[0]);
+    const API_URL = process.env.REACT_APP_API_URL;
+    if (API_URL) try {
+      const res = await fetch(`${API_URL}/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageB64, occasion }),
+      });
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const p = await res.json();
       const todayLabel = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
       const isFirstToday = !(getUserData(user.email)?.history||[]).some(h=>h.date===todayLabel);
       const thumb = await createThumbnail(imageB64);
@@ -1321,7 +1308,7 @@ Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
       if((u2?.totalRatings||0)===1&&!store.get("ootd_notif_asked")){store.set("ootd_notif_asked",true);setTimeout(()=>setShowNotifPrompt(true),2000);}
       if(isFirstToday){ const sc=getStreak(user.email); setTimeout(()=>{setNewStreakCount(sc);setShowStreakAnim(true);},1400); }
       setScreen("result"); return;
-    } catch(e) { console.log("Puter error:", e.message); }
+    } catch(e) { console.log("API error:", e.message); }
 
     // Fallback smart mock - truly random each time
     await new Promise(r=>setTimeout(r, 2200));

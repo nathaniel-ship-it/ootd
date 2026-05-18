@@ -23,9 +23,7 @@ export async function initPurchases(userId) {
 
 export async function purchasePro() {
   if (!isNative()) {
-    // Web/testing fallback — simulates a successful purchase
-    await new Promise((r) => setTimeout(r, 1500));
-    return true;
+    throw new Error("Subscriptions are only available in the iOS app. Download OOTD from the App Store to subscribe.");
   }
   const { current } = await Purchases.getOfferings();
   if (!current) throw new Error("No offerings available. Check RevenueCat dashboard.");
