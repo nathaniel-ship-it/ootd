@@ -21,14 +21,15 @@ SCORE SCALE (0-100). Use this EXACTLY:
 - Below 68: ONLY for outfits with clear visible problems (clashing colors, broken proportions, dirty/damaged clothes).
 
 HARD MINIMUMS — you MUST follow these, no exceptions:
-- Any outfit that looks clean and intentional: score 75+
-- Monochrome or neutral palette (all black, all white, beige/cream tones, navy): score 80+
-- Clear aesthetic (streetwear, old money, clean girl, Y2K, athleisure, techwear, etc.): score 78+
-- Fitted clothes with good silhouette: fit score 21+/25
+- Any outfit that looks clean and intentional: score 80+
+- Monochrome or neutral palette (all black, all white, beige/cream tones, navy): score 85+
+- Clear aesthetic (streetwear, old money, clean girl, Y2K, athleisure, techwear, etc.): score 83+
+- Fitted clothes with good silhouette: fit score 22+/25
 - Neutral color palette: color score 22+/25
-- Accessories visible: add 3 to score
-- Shoes match the vibe: add 2 to score
-- Layering present: add 3 to score
+- Accessories visible: add 4 to score
+- Shoes match the vibe: add 3 to score
+- Layering present: add 4 to score
+- When in doubt, go HIGHER — it's better to hype someone up than to discourage them
 
 BREAKDOWN — each sub-score out of 25, they MUST sum to the total score:
 - fit: how well clothes fit and flatter the body
@@ -52,8 +53,8 @@ function enforceMinimums(rating) {
   let { score, breakdown } = rating;
   const { fit, color, style, occasion } = breakdown || {};
 
-  // Floor: nothing below 68 unless we have a reason (we can't detect a reason, so just floor at 68)
-  if (score < 68) score = 68;
+  // Floor: nothing below 72
+  if (score < 72) score = 72;
 
   // Rebuild breakdown proportionally if it doesn't sum to score
   const sum = (fit || 0) + (color || 0) + (style || 0) + (occasion || 0);

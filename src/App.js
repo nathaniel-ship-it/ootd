@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect, memo } from "react";
 import { initPurchases, purchasePro, checkProStatus, restorePurchases, isNative, manageSubscription } from "./purchases";
 import { requestNotificationPermission, scheduleDailyNotification, initNotifications } from "./notifications";
 import PRIVACY_POLICY_HTML from "./privacyPolicy";
+import { Share } from "@capacitor/share";
+import { Filesystem, Directory } from "@capacitor/filesystem";
 
 const OCCASIONS = ["everyday","date night","work","party","gym","travel"];
 const FAKE_DOMAINS = ["test.com","fake.com","mailinator.com","guerrillamail.com","tempmail.com","throwaway.email","yopmail.com","sharklasers.com","trashmail.com","10minutemail.com","fakeinbox.com","spamgourmet.com","maildrop.cc","dispostable.com","example.com","sample.com"];
@@ -1136,22 +1138,33 @@ async function generateShareImage(result, imageB64, imageMime) {
 
 // ── Native Share ──
 async function nativeShare(result, imageB64, imageMime) {
-  let file = null;
-  try {
-    const blob = await generateShareImage(result, imageB64, imageMime);
-    if (blob) file = new File([blob], 'ootd-score.png', { type: 'image/png' });
-  } catch { /* fall through */ }
+  // Generate the share card image
+  let blob = null;
+  try { blob = await generateShareImage(result, imageB64, imageMime); } catch { /* fall through */ }
 
-  // Share the actual image card — this lets Instagram, Messages, etc. receive the image
-  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+  // On iOS/Android — save card to temp file then share via native sheet
+  if (blob && isNative()) {
     try {
-      await navigator.share({ files: [file], title: 'My OOTD Score' });
+      const reader = new FileReader();
+      const b64 = await new Promise(res => { reader.onload = () => res(reader.result.split(',')[1]); reader.readAsDataURL(blob); });
+      const fname = `ootd-score-${Date.now()}.png`;
+      await Filesystem.writeFile({ path: fname, data: b64, directory: Directory.Cache });
+      const { uri } = await Filesystem.getUri({ path: fname, directory: Directory.Cache });
+      await Share.share({ title: 'My OOTD Score', url: uri, dialogTitle: 'Share your score' });
       return true;
-    } catch { return false; }
+    } catch (e) {
+      if (e?.message?.includes('cancel') || e?.message?.includes('Cancel')) return false;
+      // fall through to web share
+    }
   }
 
-  // File sharing not supported — download the image to the camera roll instead
-  if (file) {
+  // On web — try Web Share API with image file
+  if (blob) {
+    const file = new File([blob], 'ootd-score.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'My OOTD Score' }); return true; } catch { return false; }
+    }
+    // Web Share doesn't support files — download it instead
     const url = URL.createObjectURL(file);
     const a = document.createElement('a');
     a.href = url; a.download = 'ootd-score.png'; a.click();
@@ -1159,11 +1172,8 @@ async function nativeShare(result, imageB64, imageMime) {
     return 'downloaded';
   }
 
-  // Image generation failed — fall back to sharing text
+  // Image generation failed — copy text as last resort
   const text = `I just got ${result.score}/100 on OOTD 👗\n"${result.vibe}"\n\nRate your fit → ootd.app`;
-  if (navigator.share) {
-    try { await navigator.share({ title: `My OOTD Score: ${result.score}/100`, text }); return true; } catch { return false; }
-  }
   try { await navigator.clipboard.writeText(text); return 'copied'; } catch { return false; }
 }
 
