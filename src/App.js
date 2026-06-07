@@ -1804,9 +1804,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
 
                     <div style={{marginBottom:16}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:12}}>
-                        <ZigZag color={dColor} width={48}/>
                         <p style={{fontSize:9,color:T.faint,letterSpacing:3,textTransform:"uppercase"}}>Screenshot & post this</p>
-                        <ZigZag color={dColor} width={48}/>
                       </div>
                       <ShareCard result={result} imageB64={imageB64} imageMime={imageMime} fit={imageFit}/>
                       <button onClick={async()=>{

@@ -39,7 +39,7 @@ BREAKDOWN — each sub-score out of 25, they MUST sum to the total score:
 
 OUTPUT RULES:
 - Be enthusiastic and specific in the verdict — name the exact aesthetic you see
-- vibe: 3-5 punchy words (e.g. "Dark Academia Clean Edge", "Coastal Old Money", "Y2K Streetwear")
+- vibe: 2-4 words MAX, use REAL aesthetic names people actually search on TikTok/Pinterest. Examples: "Quiet Luxury", "Dark Academia", "Clean Girl", "Coastal Cowgirl", "Old Money", "Streetwear Flex", "Soft Boy", "Tomboy Chic", "Mob Wife", "Indie Sleaze", "Gorpcore", "Balletcore", "Coquette", "Techwear", "Preppy Minimal", "Y2K Revival", "Boho Luxe", "Corporate Baddie", "Skater Grunge", "Athleisure Elevated". Pick the ONE that fits best — do NOT make up fake or generic phrases like "Clean Quiet Luxury Edge"
 - pros: 2 specific compliments about what's working
 - cons: 1-2 gentle, constructive suggestions (frame positively)
 - upgrade: one specific actionable tip to push the score higher
