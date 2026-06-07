@@ -305,9 +305,7 @@ function Onboarding({onDone, dark}) {
       <div style={{width:"100%",maxWidth:380,textAlign:"center"}}>
         <div style={{fontSize:64,marginBottom:24}}>{s.icon}</div>
         <div style={{position:"relative",display:"inline-block",marginBottom:16}}>
-          <Star color={dColor} size={14} style={{position:"absolute",top:-16,right:-20}}/>
           <div style={{fontSize:26,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:T.text,lineHeight:1.2}}>{s.title}</div>
-          <Squiggle color={dColor} width={180} style={{margin:"8px auto 0"}}/>
         </div>
         <p style={{fontSize:13,color:T.muted,lineHeight:1.7,maxWidth:300,margin:"0 auto 36px"}}>{s.sub}</p>
         {s.isPro && (
@@ -1371,10 +1369,7 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
       <div style={{width:"100%",maxWidth:380}}>
         <div style={{textAlign:"center",marginBottom:40}}>
           <div style={{position:"relative",display:"inline-block"}}>
-            <Star color={isDark?"rgba(255,255,255,0.4)":"rgba(0,0,0,0.2)"} size={16} style={{position:"absolute",top:-14,right:-22}}/>
-            <Star color={isDark?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.12)"} size={10} style={{position:"absolute",top:2,left:-20}}/>
             <div style={{fontSize:38,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:T.text,letterSpacing:-1}}>OOTD</div>
-            <Squiggle color={isDark?"rgba(255,255,255,0.25)":"rgba(0,0,0,0.18)"} width={90} style={{margin:"2px auto 0"}}/>
           </div>
           <div style={{fontSize:9,color:T.faint,letterSpacing:5,textTransform:"uppercase",marginTop:8}}>AI Outfit Rater</div>
         </div>
@@ -1667,7 +1662,6 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
       <div style={{width:"100%",maxWidth:420,padding:"28px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between"}}>
         <div style={{position:"relative"}}>
           <div style={{fontSize:26,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:T.text}}>OOTD</div>
-          <Squiggle color={dColor} width={60} style={{marginTop:2}}/>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3}}>
             <div style={{fontSize:9,color:T.faint,letterSpacing:4,textTransform:"uppercase"}}>AI Outfit Rater</div>
             <div style={{fontSize:9,color:streak>0?"#f0932b":T.faint,letterSpacing:1,fontWeight:streak>0?600:400}}>
@@ -1710,10 +1704,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                         <span style={{fontSize:26,color:dark?"#000":"#fff"}}>↑</span>
                       </div>
                       <div style={{position:"relative",display:"inline-block"}}>
-                        <Star color={dColor} size={14} style={{position:"absolute",top:-18,right:-20}}/>
-                        <Star color={dColor} size={10} style={{position:"absolute",top:-8,left:-18}}/>
                         <div style={{fontSize:16,fontFamily:"'Playfair Display',Georgia,serif",marginBottom:4,color:T.text,fontWeight:700}}>Upload your OOTD</div>
-                        <Squiggle color={dColor} width={160} style={{margin:"0 auto"}}/>
                       </div>
                       <div style={{fontSize:10,color:T.faint,letterSpacing:2,marginTop:10}}>tap or drag a photo</div>
                     </div>
@@ -1722,7 +1713,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                 <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])}/>
                 {imageB64&&<button onClick={analyze} style={{width:"100%",background:dark?"#fff":"#111",color:dark?"#000":"#fff",border:"none",borderRadius:14,padding:"16px 0",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",boxShadow:dark?"none":"0 4px 20px rgba(0,0,0,0.15)"}}>Rate My Outfit →</button>}
                 <div style={{textAlign:"center",marginTop:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                  <Star color={dColor} size={12}/><p style={{fontSize:9,color:T.faint,letterSpacing:3,textTransform:"uppercase"}}>Brutal · Honest · Accurate</p><Star color={dColor} size={12}/>
+                  <p style={{fontSize:9,color:T.faint,letterSpacing:3,textTransform:"uppercase"}}>Brutal · Honest · Accurate</p>
                 </div>
               </div>
             )}
@@ -1754,10 +1745,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                         </div>
                       </div>
                       <div style={{position:"relative",display:"inline-block",marginBottom:8}}>
-                        <Star color={dColor} size={13} style={{position:"absolute",top:-16,left:-20}}/>
-                        <Star color={dColor} size={9} style={{position:"absolute",top:-10,right:-16}}/>
                         <div style={{fontSize:19,fontFamily:"'Playfair Display',Georgia,serif",color:T.text}}>"{result.vibe}"</div>
-                        <Squiggle color={dColor} width={200} style={{margin:"4px auto 0"}}/>
                       </div>
                       <div style={{fontSize:12,color:T.muted,lineHeight:1.7,maxWidth:320,margin:"10px auto 0"}}>{result.verdict}</div>
                     </div>
@@ -1797,7 +1785,6 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                     <div style={{background:"#111",borderRadius:14,padding:16,marginBottom:20}}>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                         <p style={{fontSize:8,color:"rgba(255,255,255,0.65)",letterSpacing:3,textTransform:"uppercase"}}>Upgrade Move</p>
-                        <Arrow color="rgba(255,255,255,0.4)" style={{width:22,height:22}}/>
                       </div>
                       <p style={{fontSize:12,color:"rgba(255,255,255,0.9)",lineHeight:1.6}}>{result.upgrade}</p>
                     </div>
