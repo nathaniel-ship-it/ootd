@@ -6,6 +6,17 @@ import PRIVACY_POLICY_HTML from "./privacyPolicy";
 const OCCASIONS = ["everyday","date night","work","party","gym","travel"];
 const FAKE_DOMAINS = ["test.com","fake.com","mailinator.com","guerrillamail.com","tempmail.com","throwaway.email","yopmail.com","sharklasers.com","trashmail.com","10minutemail.com","fakeinbox.com","spamgourmet.com","maildrop.cc","dispostable.com","example.com","sample.com"];
 
+// ── Promo Codes — add or remove codes here ──
+const PROMO_CODES = new Set(["OOTD50","LAUNCH50","STYLE50","VIBE50","EARLYBIRD"]);
+
+function normalizePhone(p) { return (p||"").replace(/\D/g,""); }
+function getUserDataByPhone(phone) {
+  const digits = normalizePhone(phone);
+  if (digits.length < 7) return null;
+  const email = store.get(`ootd_phone_${digits}`);
+  return email ? { email, data: getUserData(email) } : null;
+}
+
 const isValidEmail = e => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)) return "Enter a valid email address.";
   if (FAKE_DOMAINS.includes(e.split("@")[1]?.toLowerCase())) return "Please use a real email address.";
@@ -116,15 +127,17 @@ function useAuth() {
     if (u.password !== password) return "Incorrect password.";
     const s = {email:norm, name:u.name}; store.set("ootd_u", s); setUser(s); return null;
   };
-  const signup = (name, email, password) => {
+  const signup = (name, email, password, phone) => {
     const norm = normalizeEmail(email);
     if (!name.trim()) return "Enter your name.";
     const err = isValidEmail(norm); if (err) return err;
     if (password.length < 6) return "Password must be at least 6 characters.";
     if (getUserData(norm)) return "An account with this email already exists.";
     const now = new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"});
-    const ok = store.set(`ootd_user_${norm}`, {name,password,uploads:[],weekStart:getWeekStart(),totalRatings:0,joinedAt:now,pro:false,avatar:null,history:[],onboarded:false});
+    const digits = normalizePhone(phone);
+    const ok = store.set(`ootd_user_${norm}`, {name,password,phone:digits||null,uploads:[],weekStart:getWeekStart(),totalRatings:0,joinedAt:now,pro:false,avatar:null,history:[],onboarded:false});
     if(!ok) return "Couldn't save your account. Try clearing some browser storage and signing up again.";
+    if (digits.length >= 7) store.set(`ootd_phone_${digits}`, norm);
     const s = {email:norm, name}; store.set("ootd_u", s); setUser(s); return null;
   };
   const logout = () => { store.del("ootd_u"); setUser(null); };
@@ -230,7 +243,7 @@ function scheduleNotifications(email) {
   if ([1,3,5].includes(dow)) {
     const noon = new Date(); noon.setHours(12,0,0,0);
     const delay = now < noon ? noon - now : 0;
-    if (delay < 12*60*60*1000) {
+    if (delay > 0 && delay < 12*60*60*1000) {
       setTimeout(()=>{
         if (Notification.permission==="granted") {
           new Notification("OOTD",{body:msgs[Math.floor(Math.random()*msgs.length)]});
@@ -725,15 +738,26 @@ function PaywallModal({onClose,onSubscribe}) {
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState("");
   const [restoring,setRestoring] = useState(false);
+  const [showPromo,setShowPromo] = useState(false);
+  const [promoInput,setPromoInput] = useState("");
+  const [promoApplied,setPromoApplied] = useState(false);
+  const [promoError,setPromoError] = useState("");
+
+  const applyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    if (PROMO_CODES.has(code)) { setPromoApplied(true); setPromoError(""); }
+    else { setPromoError("Invalid code. Try again."); setPromoApplied(false); }
+  };
 
   const handlePurchase = async () => {
+    if (promoApplied) { setStep("success"); return; }
     setError(""); setLoading(true);
     try {
       const isPro = await purchasePro();
       if (isPro) { setStep("success"); }
       else { setError("Subscription not activated. Try restoring purchases below."); }
     } catch(e) {
-      // userCancelled means the user dismissed Apple's sheet — not an error
       if (!e?.userCancelled) setError(e?.message || "Purchase failed. Please try again.");
     } finally { setLoading(false); }
   };
@@ -765,28 +789,64 @@ function PaywallModal({onClose,onSubscribe}) {
               <div><div style={{fontSize:12,color:"#000",marginBottom:2}}>{t}</div><div style={{fontSize:10,color:"#888"}}>{d}</div></div>
             </div>
           ))}
-          <div style={{background:"#f5f5f5",borderRadius:12,padding:"14px 18px",margin:"20px 0 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><div style={{fontSize:12,color:"#000"}}>OOTD Pro · Monthly</div><div style={{fontSize:10,color:"#888"}}>Cancel anytime in Settings</div></div>
-            <div style={{fontSize:20,fontWeight:700,color:"#000",fontFamily:"'Playfair Display',Georgia,serif"}}>$7.99</div>
+
+          {/* Price box */}
+          <div style={{background:promoApplied?"#f0fff4":"#f5f5f5",borderRadius:12,padding:"14px 18px",margin:"20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center",border:promoApplied?"1.5px solid #22c55e":"1.5px solid transparent",transition:"all 0.2s"}}>
+            <div>
+              <div style={{fontSize:12,color:"#000"}}>OOTD Pro · Monthly</div>
+              <div style={{fontSize:10,color:promoApplied?"#16a34a":"#888"}}>
+                {promoApplied ? "50% off · First month discount applied ✓" : "Cancel anytime in Settings"}
+              </div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              {promoApplied&&<div style={{fontSize:11,color:"#bbb",textDecoration:"line-through",lineHeight:1}}>$7.99</div>}
+              <div style={{fontSize:20,fontWeight:700,color:promoApplied?"#16a34a":"#000",fontFamily:"'Playfair Display',Georgia,serif"}}>{promoApplied?"$3.99":"$7.99"}</div>
+            </div>
           </div>
+
+          {/* Promo code section */}
+          <div style={{marginTop:10,marginBottom:16}}>
+            {!showPromo&&!promoApplied&&(
+              <button onClick={()=>setShowPromo(true)} style={{background:"none",border:"none",color:"#aaa",fontSize:10,cursor:"pointer",letterSpacing:1,textDecoration:"underline",fontFamily:"'DM Mono',monospace",padding:"4px 0"}}>Have a promo code?</button>
+            )}
+            {showPromo&&!promoApplied&&(
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <input
+                  value={promoInput}
+                  onChange={e=>{setPromoInput(e.target.value.toUpperCase());setPromoError("");}}
+                  onKeyDown={e=>e.key==="Enter"&&applyPromo()}
+                  placeholder="ENTER CODE"
+                  style={{flex:1,background:"#f5f5f5",border:`1.5px solid ${promoError?"#e00":"#e0e0e0"}`,borderRadius:10,padding:"11px 14px",fontSize:12,fontFamily:"'DM Mono',monospace",outline:"none",letterSpacing:2,color:"#000"}}
+                />
+                <button onClick={applyPromo} style={{background:"#000",color:"#fff",border:"none",borderRadius:10,padding:"11px 18px",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:1,fontFamily:"'DM Mono',monospace",whiteSpace:"nowrap"}}>Apply</button>
+              </div>
+            )}
+            {promoError&&<p style={{color:"#c00",fontSize:10,marginTop:6,fontFamily:"'DM Mono',monospace"}}>{promoError}</p>}
+          </div>
+
           {error&&<p style={{color:"#c00",fontSize:11,marginBottom:12,textAlign:"center",lineHeight:1.5}}>{error}</p>}
-          <button onClick={handlePurchase} disabled={loading} style={{width:"100%",background:loading?"#e0e0e0":"#000",color:loading?"#aaa":"#fff",border:"none",borderRadius:12,padding:"16px 0",fontSize:14,fontWeight:600,cursor:loading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10}}>
-            {loading ? "Connecting to App Store..." : (<>
+          <button onClick={handlePurchase} disabled={loading} style={{width:"100%",background:loading?"#e0e0e0":promoApplied?"#16a34a":"#000",color:loading?"#aaa":"#fff",border:"none",borderRadius:12,padding:"16px 0",fontSize:14,fontWeight:600,cursor:loading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10}}>
+            {loading ? "Connecting to App Store..." : promoApplied ? "Redeem Code · $3.99/month →" : (<>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
               Subscribe $7.99/month
             </>)}
           </button>
-          <button onClick={handleRestore} disabled={restoring} style={{width:"100%",background:"none",border:"none",color:"#888",fontSize:10,cursor:restoring?"not-allowed":"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",padding:"10px 0",marginBottom:4}}>
-            {restoring ? "Restoring..." : "Restore Purchases"}
-          </button>
-          <button onClick={onClose} style={{width:"100%",background:"none",border:"none",color:"#bbb",fontSize:10,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",padding:"8px 0"}}>Maybe later</button>
-          <p style={{textAlign:"center",fontSize:9,color:"#ccc",marginTop:10,letterSpacing:1,lineHeight:1.6}}>Payment processed by Apple · Subscription auto-renews monthly · Cancel anytime in iOS Settings</p>
+          {!promoApplied&&<>
+            <button onClick={handleRestore} disabled={restoring} style={{width:"100%",background:"none",border:"none",color:"#888",fontSize:10,cursor:restoring?"not-allowed":"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",padding:"10px 0",marginBottom:4}}>
+              {restoring ? "Restoring..." : "Restore Purchases"}
+            </button>
+            <button onClick={onClose} style={{width:"100%",background:"none",border:"none",color:"#bbb",fontSize:10,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",padding:"8px 0"}}>Maybe later</button>
+            <p style={{textAlign:"center",fontSize:9,color:"#ccc",marginTop:10,letterSpacing:1,lineHeight:1.6}}>Payment processed by Apple · Subscription auto-renews monthly · Cancel anytime in iOS Settings</p>
+          </>}
+          {promoApplied&&<button onClick={onClose} style={{width:"100%",marginTop:4,background:"none",border:"none",color:"#bbb",fontSize:10,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",padding:"8px 0"}}>Maybe later</button>}
         </>)}
         {step==="success"&&(
           <div style={{textAlign:"center",padding:"20px 0"}}>
             <div style={{width:72,height:72,borderRadius:"50%",background:"#000",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 24px"}}><span style={{fontSize:28,color:"#fff"}}>✦</span></div>
             <div style={{fontSize:24,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:"#000",marginBottom:10}}>You're Pro now!</div>
-            <div style={{fontSize:11,color:"#888",lineHeight:1.7,marginBottom:28}}>Payment confirmed via App Store.<br/>Unlimited outfit ratings unlocked.</div>
+            <div style={{fontSize:11,color:"#888",lineHeight:1.7,marginBottom:28}}>
+              {promoApplied ? "Promo code applied. Enjoy your first month at $3.99." : "Payment confirmed via App Store."}<br/>Unlimited outfit ratings unlocked.
+            </div>
             <button onClick={onSubscribe} style={{background:"#000",color:"#fff",border:"none",borderRadius:12,padding:"14px 40px",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>Start Rating →</button>
           </div>
         )}
@@ -803,6 +863,7 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
   const [legalModal,setLegalModal] = useState(null);
   const [showDelete,setShowDelete] = useState(false);
   const [showCancelConfirm,setShowCancelConfirm] = useState(false);
+  const [showSignOutConfirm,setShowSignOutConfirm] = useState(false);
   const [showAccountSettings,setShowAccountSettings] = useState(false);
   const handleAvatarFile = async file => {
     if (!file?.type.startsWith("image/")) return;
@@ -883,7 +944,7 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
       })()}
       <div style={{background:dark?T.bg2:T.card,borderRadius:14,overflow:"hidden",boxShadow:dark?"none":"0 2px 16px rgba(0,0,0,0.1)"}}>
         {[["Sign Out","→","signout"],["Account Settings","→","account"],["Privacy Policy","→","privacy"],["Terms of Service","→","terms"],["Delete Account","⚠","delete"]].map(([label,icon,action],i)=>(
-          <div key={label} onClick={()=>{if(action==="delete")setShowDelete(true);else if(action==="account")setShowAccountSettings(true);else if(action==="signout")onSignOut();else setLegalModal(action);}} style={{padding:"15px 18px",borderBottom:i<4?`1px solid ${dark?T.border:T.cardText+"11"}`:"none",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
+          <div key={label} onClick={()=>{if(action==="delete")setShowDelete(true);else if(action==="account")setShowAccountSettings(true);else if(action==="signout")setShowSignOutConfirm(true);else setLegalModal(action);}} style={{padding:"15px 18px",borderBottom:i<4?`1px solid ${dark?T.border:T.cardText+"11"}`:"none",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
             <span style={{fontSize:12,color:label==="Delete Account"?"#ff6666":dark?T.text:T.cardText}}>{label}</span>
             <span style={{fontSize:12,color:dark?T.faint:`${T.cardText}33`}}>{icon}</span>
           </div>
@@ -892,6 +953,21 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
       {legalModal&&<LegalModal type={legalModal} onClose={()=>setLegalModal(null)}/>}
       {showDelete&&<DeleteAccountModal onClose={()=>setShowDelete(false)} onConfirm={()=>{store.del(`ootd_user_${user.email}`);store.del(`ootd_meta_${user.email}`);store.del("ootd_u");onDelete();}}/>}
       {showAccountSettings&&<AccountSettingsModal user={user} onClose={()=>setShowAccountSettings(false)} onSave={updated=>{setU(updated);setShowAccountSettings(false);}}/>}
+      {showSignOutConfirm&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:150,display:"flex",alignItems:"center",justifyContent:"center",padding:24}} onClick={()=>setShowSignOutConfirm(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:24,padding:"32px 24px",width:"100%",maxWidth:360,textAlign:"center"}}>
+            <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(255,255,255,0.07)",border:`1px solid ${T.border2}`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px"}}>
+              <span style={{fontSize:20,color:T.text}}>→</span>
+            </div>
+            <div style={{fontSize:18,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:T.text,marginBottom:8}}>Sign Out?</div>
+            <div style={{fontSize:12,color:T.muted,lineHeight:1.7,marginBottom:24}}>You'll need to sign back in to access your ratings and streak.</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setShowSignOutConfirm(false)} style={{flex:1,background:"transparent",color:T.text,border:`1px solid ${T.border2}`,borderRadius:12,padding:"13px 0",fontSize:11,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>Cancel</button>
+              <button onClick={()=>{setShowSignOutConfirm(false);onSignOut();}} style={{flex:1,background:"rgba(255,255,255,0.1)",color:T.text,border:`1px solid ${T.border2}`,borderRadius:12,padding:"13px 0",fontSize:11,fontWeight:700,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>Sign Out</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -940,13 +1016,153 @@ function NotificationPrompt({onDone, dark}) {
   );
 }
 
-// ── Native Share ──
-async function nativeShare(result) {
-  const text = `I just got rated ${result.score}/100 on OOTD 👗\n"${result.vibe}"\n\nRate your fit → ootd.app`;
-  if (navigator.share) {
-    try { await navigator.share({title:"My OOTD Score", text}); return true; } catch { return false; }
+// ── Share Image Generation ──
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  const lines = [];
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxWidth && line !== '') {
+      lines.push(line.trim());
+      line = word + ' ';
+    } else {
+      line = test;
+    }
   }
-  try { await navigator.clipboard.writeText(text); return "copied"; } catch { return false; }
+  if (line.trim()) lines.push(line.trim());
+  lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+}
+
+async function generateShareImage(result, imageB64, imageMime) {
+  const W = 1080, H = 1920;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Dark background
+  ctx.fillStyle = '#0d0d0d';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle gold shimmer
+  const shimmer = ctx.createLinearGradient(0, 0, W, H);
+  shimmer.addColorStop(0, 'rgba(255,209,102,0.07)');
+  shimmer.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shimmer;
+  ctx.fillRect(0, 0, W, H);
+
+  // Outfit image — full bleed top 58%
+  if (imageB64) {
+    await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const clipH = H * 0.58;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, W, clipH);
+        ctx.clip();
+        const scale = Math.max(W / img.width, clipH / img.height);
+        const iw = img.width * scale, ih = img.height * scale;
+        ctx.drawImage(img, (W - iw) / 2, (clipH - ih) / 2, iw, ih);
+        ctx.restore();
+
+        // Fade the image into the dark background
+        const fade = ctx.createLinearGradient(0, clipH * 0.55, 0, clipH);
+        fade.addColorStop(0, 'rgba(13,13,13,0)');
+        fade.addColorStop(1, 'rgba(13,13,13,1)');
+        ctx.fillStyle = fade;
+        ctx.fillRect(0, 0, W, clipH);
+        resolve();
+      };
+      img.src = `data:${imageMime};base64,${imageB64}`;
+    });
+  }
+
+  // OOTD branding — top left
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.font = '400 38px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('AI OUTFIT RATER', 64, 96);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 108px Georgia, serif';
+  ctx.fillText('OOTD', 60, 210);
+
+  // Score — big and centered
+  const scoreY = H * 0.675;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 300px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(result.score, W / 2, scoreY);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '400 52px monospace';
+  ctx.fillText('OUT OF 100', W / 2, scoreY + 64);
+
+  // Vibe quote
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.font = 'italic 600 58px Georgia, serif';
+  ctx.textAlign = 'center';
+  wrapCanvasText(ctx, `"${result.vibe}"`, W / 2, H * 0.795, W - 160, 74);
+
+  // Breakdown boxes
+  const cats = [['Fit', result.breakdown?.fit], ['Color', result.breakdown?.color], ['Style', result.breakdown?.style], ['Occ', result.breakdown?.occasion]];
+  const bW = 218, bH = 148, bGap = 16;
+  const bStartX = (W - (cats.length * bW + (cats.length - 1) * bGap)) / 2;
+  const bY = H - 280;
+  cats.forEach(([label, val], i) => {
+    const bx = bStartX + i * (bW + bGap);
+    ctx.fillStyle = 'rgba(255,255,255,0.09)';
+    ctx.beginPath();
+    ctx.roundRect(bx, bY, bW, bH, 24);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 72px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(val ?? '-', bx + bW / 2, bY + 92);
+    ctx.fillStyle = 'rgba(255,255,255,0.38)';
+    ctx.font = '400 28px monospace';
+    ctx.fillText(label.toUpperCase(), bx + bW / 2, bY + 130);
+  });
+
+  // Watermark
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.font = '400 30px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ootd.app', W / 2, H - 48);
+
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+// ── Native Share ──
+async function nativeShare(result, imageB64, imageMime) {
+  let file = null;
+  try {
+    const blob = await generateShareImage(result, imageB64, imageMime);
+    if (blob) file = new File([blob], 'ootd-score.png', { type: 'image/png' });
+  } catch { /* fall through */ }
+
+  // Share the actual image card — this lets Instagram, Messages, etc. receive the image
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'My OOTD Score' });
+      return true;
+    } catch { return false; }
+  }
+
+  // File sharing not supported — download the image to the camera roll instead
+  if (file) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ootd-score.png'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return 'downloaded';
+  }
+
+  // Image generation failed — fall back to sharing text
+  const text = `I just got ${result.score}/100 on OOTD 👗\n"${result.vibe}"\n\nRate your fit → ootd.app`;
+  if (navigator.share) {
+    try { await navigator.share({ title: `My OOTD Score: ${result.score}/100`, text }); return true; } catch { return false; }
+  }
+  try { await navigator.clipboard.writeText(text); return 'copied'; } catch { return false; }
 }
 
 // ── Legal Modal ──
@@ -1077,24 +1293,40 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
   const [acceptedPP,setAcceptedPP] = useState(false);
   const [acceptedTOS,setAcceptedTOS] = useState(false);
   const [legalType,setLegalType] = useState(null);
-  const [forgotStep,setForgotStep] = useState(null); // null | "enter" | "show"
-  const [forgotEmail,setForgotEmail] = useState("");
+  const [forgotStep,setForgotStep] = useState(null); // null | "enter" | "show" | "notfound"
+  const [forgotInput,setForgotInput] = useState("");
+  const [forgotFoundEmail,setForgotFoundEmail] = useState("");
   const [forgotPw,setForgotPw] = useState("");
   const [showForgotPw,setShowForgotPw] = useState(false);
-  const nameRef=useRef(),emailRef=useRef(),pwRef=useRef();
+  const nameRef=useRef(),emailRef=useRef(),pwRef=useRef(),phoneRef=useRef();
 
   const handleForgot = () => {
-    const u = getUserData(forgotEmail.trim().toLowerCase());
-    if (!u) { setForgotPw(""); setForgotStep("notfound"); return; }
-    setForgotPw(u.password||"");
+    const input = forgotInput.trim();
+    if (!input) return;
+    const digits = normalizePhone(input);
+    const looksLikePhone = /^\+?[\d\s\-()+.]{7,}$/.test(input) && digits.length >= 7;
+    let found = null, foundEmail = "";
+
+    if (looksLikePhone) {
+      const r = getUserDataByPhone(digits);
+      if (r) { found = r.data; foundEmail = r.email; }
+    }
+    if (!found) {
+      const norm = input.toLowerCase();
+      const u = getUserData(norm);
+      if (u) { found = u; foundEmail = norm; }
+    }
+    if (!found) { setForgotStep("notfound"); return; }
+    setForgotPw(found.password || "");
+    setForgotFoundEmail(foundEmail);
     setForgotStep("show");
   };
 
   const submit = useCallback(()=>{
     setError(""); setLoading(true);
     setTimeout(()=>{
-      const name=nameRef.current?.value||"", email=emailRef.current?.value||"", pw=pwRef.current?.value||"";
-      const err = mode==="login"?onAuth.login(email,pw):onAuth.signup(name,email,pw);
+      const name=nameRef.current?.value||"", email=emailRef.current?.value||"", pw=pwRef.current?.value||"", phone=phoneRef.current?.value||"";
+      const err = mode==="login"?onAuth.login(email,pw):onAuth.signup(name,email,pw,phone);
       if(err){
         if(mode==="login"&&err==="No account found. Please sign up."){
           setMode("signup"); setAcceptedPP(false); setAcceptedTOS(false);
@@ -1142,6 +1374,7 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
           </div>
           {mode==="signup"&&<input ref={nameRef} placeholder="Full name" style={field}/>}
           <input ref={emailRef} placeholder="Email address" type="email" style={field}/>
+          {mode==="signup"&&<input ref={phoneRef} placeholder="Phone number (optional)" type="tel" style={field}/>}
           <input ref={pwRef} placeholder="Password (min 6 chars)" type="password" style={field} onKeyDown={e=>e.key==="Enter"&&canSubmit&&submit()}/>
           {mode==="login"&&<div style={{textAlign:"right",marginTop:-6,marginBottom:10}}>
             <span onClick={()=>setForgotStep("enter")} style={{fontSize:9,color:T.muted,cursor:"pointer",letterSpacing:1,textDecoration:"underline",fontFamily:"'DM Mono',monospace"}}>Forgot password?</span>
@@ -1171,13 +1404,20 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
           <div style={{width:40,height:4,background:T.border2,borderRadius:2,margin:"0 auto 24px"}}/>
           <div style={{fontSize:18,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:T.text,marginBottom:6}}>Forgot Password</div>
           {(forgotStep==="enter"||forgotStep==="notfound")&&<>
-            <div style={{fontSize:11,color:T.muted,marginBottom:20}}>Enter your email and we'll show your password.</div>
-            <input value={forgotEmail} onChange={e=>setForgotEmail(e.target.value)} placeholder="Email address" type="email" style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"13px 16px",color:T.text,fontSize:13,fontFamily:"'DM Mono',monospace",outline:"none",marginBottom:10,display:"block"}}/>
-            {forgotStep==="notfound"&&<p style={{color:T.red,fontSize:11,marginBottom:10}}>No account found for that email.</p>}
+            <div style={{fontSize:11,color:T.muted,marginBottom:20}}>Enter your email or phone number to look up your account.</div>
+            <input
+              value={forgotInput}
+              onChange={e=>setForgotInput(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&handleForgot()}
+              placeholder="Email or phone number"
+              type="text"
+              style={{width:"100%",background:T.bg3,border:`1px solid ${forgotStep==="notfound"?T.red:T.border}`,borderRadius:10,padding:"13px 16px",color:T.text,fontSize:13,fontFamily:"'DM Mono',monospace",outline:"none",marginBottom:10,display:"block"}}
+            />
+            {forgotStep==="notfound"&&<p style={{color:T.red,fontSize:11,marginBottom:10}}>No account found. Check your email or phone number.</p>}
             <button onClick={handleForgot} style={{width:"100%",background:T.card,color:T.cardText,border:"none",borderRadius:12,padding:"14px 0",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",marginBottom:10}}>Look Up →</button>
           </>}
           {forgotStep==="show"&&<>
-            <div style={{fontSize:11,color:T.muted,marginBottom:16}}>Your password for <strong style={{color:T.text}}>{forgotEmail}</strong>:</div>
+            <div style={{fontSize:11,color:T.muted,marginBottom:16}}>Password for <strong style={{color:T.text}}>{forgotFoundEmail}</strong>:</div>
             <div style={{position:"relative",marginBottom:20}}>
               <div style={{background:T.bg3,border:`1px solid ${T.border}`,borderRadius:10,padding:"13px 48px 13px 16px",color:T.text,fontSize:15,fontFamily:"'DM Mono',monospace",letterSpacing:2}}>
                 {showForgotPw ? forgotPw : "•".repeat(forgotPw.length)}
@@ -1220,7 +1460,6 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
   const [result,setResult] = useState(null);
   const [occasion,setOccasion] = useState("everyday");
   const [animScore,setAnimScore] = useState(0);
-  const [showShare,setShowShare] = useState(false);
   const [showPaywall,setShowPaywall] = useState(false);
   const [isPro,setIsPro] = useState(()=>_meta.pro||_u.pro||false);
   const [usageLeft,setUsageLeft] = useState(()=>getUsageLeft(_meta.weekStart?_meta:_u));
@@ -1391,7 +1630,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
 
   // Called after RevenueCat confirms a successful purchase
   const handleSubscribe = ()=>{ setPro(user.email); setIsPro(true); setUsageLeft(999); setShowPaywall(false); };
-  const reset = ()=>{ setScreen("upload");setImageB64(null);setResult(null);setAnimScore(0);setShowShare(false);setOccasion("everyday");setImageFit("cover"); };
+  const reset = ()=>{ setScreen("upload");setImageB64(null);setResult(null);setAnimScore(0);setOccasion("everyday");setImageFit("cover"); };
   const handleOnboardDone = ()=>{ setOnboarded(user.email); setShowOnboarding(false); };
 
   const dColor = dark?"rgba(255,255,255,0.2)":"rgba(0,0,0,0.15)";
@@ -1551,33 +1790,26 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                       <p style={{fontSize:12,color:"rgba(255,255,255,0.9)",lineHeight:1.6}}>{result.upgrade}</p>
                     </div>
 
-                    <div style={{display:"flex",gap:10,marginBottom:16}}>
+                    <div style={{marginBottom:16}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:12}}>
+                        <ZigZag color={dColor} width={48}/>
+                        <p style={{fontSize:9,color:T.faint,letterSpacing:3,textTransform:"uppercase"}}>Screenshot & post this</p>
+                        <ZigZag color={dColor} width={48}/>
+                      </div>
+                      <ShareCard result={result} imageB64={imageB64} imageMime={imageMime} fit={imageFit}/>
                       <button onClick={async()=>{
-                        const r = await nativeShare(result);
+                        setShareMsg("Generating...");
+                        const r = await nativeShare(result, imageB64, imageMime);
                         if(r==="copied") setShareMsg("Link copied!");
+                        else if(r==="downloaded") setShareMsg("Saved to device!");
                         else if(r) setShareMsg("Shared!");
-                        else setShowShare(s=>!s);
+                        else setShareMsg("");
                         if(r&&r!==false) setTimeout(()=>setShareMsg(""),2500);
-                      }} style={{flex:1,background:dark?"#fff":"#111",color:dark?"#000":"#fff",border:"none",borderRadius:12,padding:"14px 0",fontSize:10,fontWeight:600,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",boxShadow:dark?"none":"0 4px 16px rgba(0,0,0,0.2)"}}>
+                      }} style={{width:"100%",marginTop:12,background:dark?"#fff":"#111",color:dark?"#000":"#fff",border:"none",borderRadius:12,padding:"14px 0",fontSize:10,fontWeight:600,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",boxShadow:dark?"none":"0 4px 16px rgba(0,0,0,0.2)"}}>
                         {shareMsg||"↑ Share"}
                       </button>
-                      <button onClick={()=>setShowShare(s=>!s)} style={{flex:1,background:"transparent",color:T.text,border:`1px solid ${T.border2}`,borderRadius:12,padding:"14px 0",fontSize:10,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>
-                        {showShare?"Hide Card":"Share Card"}
-                      </button>
+                      <button onClick={reset} style={{width:"100%",marginTop:10,background:"transparent",color:T.text,border:`1px solid ${T.border2}`,borderRadius:12,padding:"13px 0",fontSize:10,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>Rate Another Outfit</button>
                     </div>
-
-                    {showShare&&(
-                      <div style={{marginBottom:16}}>
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:12}}>
-                          <ZigZag color={dColor} width={48}/>
-                          <p style={{fontSize:9,color:T.faint,letterSpacing:3,textTransform:"uppercase"}}>Screenshot & post this</p>
-                          <ZigZag color={dColor} width={48}/>
-                        </div>
-                        <ShareCard result={result} imageB64={imageB64} imageMime={imageMime} fit={imageFit}/>
-                        <button onClick={reset} style={{width:"100%",marginTop:12,background:"transparent",color:T.text,border:`1px solid ${T.border2}`,borderRadius:12,padding:"13px 0",fontSize:10,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>Rate Another Outfit</button>
-                      </div>
-                    )}
-                    {!showShare&&<button onClick={reset} style={{width:"100%",marginBottom:16,background:"transparent",color:T.text,border:`1px solid ${T.border2}`,borderRadius:12,padding:"13px 0",fontSize:10,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>Rate Another Outfit</button>}
 
                     {!isPro&&(
                       <div style={{background:"rgba(255,209,102,0.08)",border:"1px solid rgba(255,209,102,0.2)",borderRadius:16,padding:22,textAlign:"center"}}>
