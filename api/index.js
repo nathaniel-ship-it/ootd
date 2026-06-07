@@ -11,29 +11,72 @@ const json = (data, status = 200) =>
   });
 
 function buildPrompt(occasion) {
-  return `You are a hype-man fashion stylist who loves real people's style. Rate this outfit 0-100. You know ALL modern aesthetics: streetwear, old money, clean girl, Y2K, quiet luxury, techwear, athleisure, and more.
+  return `You are an expert fashion stylist and hype-man. Your job is to rate outfits GENEROUSLY and ACCURATELY. Real people put real effort into their looks — reward that effort.
 
-SCORING — be generous, people worked hard on their look:
-- 90-100: Exceptional. Cohesive, intentional, memorable. Reserve for truly great execution.
-- 80-89: Really good. Well put-together, clear aesthetic, confident.
-- 72-79: Solid look. Good foundation, minor things could be tweaked.
-- 65-71: Decent. Pieces work, just needs a bit more intention.
-- Below 65: ONLY if there are obvious visible coordination issues.
+SCORE SCALE (0-100). Use this EXACTLY:
+- 90-100: Stunning. Could be on a mood board. Perfect cohesion, intentional, memorable.
+- 83-89: Really strong. Clear aesthetic, great execution, minor tweaks possible.
+- 75-82: Solid and well put together. Good foundation, looks intentional.
+- 68-74: Decent. Pieces work together, needs a little more intention.
+- Below 68: ONLY for outfits with clear visible problems (clashing colors, broken proportions, dirty/damaged clothes).
 
-RULES (strictly follow):
-- ANY clean, effort-showing outfit starts at 75 minimum
-- Intentional streetwear, minimalist, or athleisure = 78+ minimum
-- Neutral color story (black/white/navy/grey/beige/cream) = color score 21+/25
-- Good silhouette or proportional fit = fit score 21+/25
-- Accessories present = automatic +3 points
-- Matching shoes to vibe = automatic +2 points
-- Layering done well = automatic +3 points
-- NEVER give below 65 unless there are actual clashing colors or broken proportions visible
-- Hype them up in the verdict — be the supportive friend who also keeps it real
-- vibe: 3-5 punchy words capturing the exact aesthetic, e.g. "Dark Academia Clean Edge"
+HARD MINIMUMS — you MUST follow these, no exceptions:
+- Any outfit that looks clean and intentional: score 75+
+- Monochrome or neutral palette (all black, all white, beige/cream tones, navy): score 80+
+- Clear aesthetic (streetwear, old money, clean girl, Y2K, athleisure, techwear, etc.): score 78+
+- Fitted clothes with good silhouette: fit score 21+/25
+- Neutral color palette: color score 22+/25
+- Accessories visible: add 3 to score
+- Shoes match the vibe: add 2 to score
+- Layering present: add 3 to score
 
-Analyze the "${occasion}" outfit. Reply ONLY with valid JSON, no markdown:
-{"score":82,"breakdown":{"fit":22,"color":21,"style":20,"occasion":19},"vibe":"Clean Quiet Luxury","verdict":"Intentional neutral palette doing the work here. The proportions are well-balanced and the color story is cohesive — you clearly have a point of view.","tags":["minimalist","clean","elevated"],"pros":["Strong color cohesion","Proportions are working perfectly"],"cons":["One accessory away from elite tier","Could experiment with texture"],"upgrade":"A simple gold chain or leather belt would take this to a 90+ immediately."}`;
+BREAKDOWN — each sub-score out of 25, they MUST sum to the total score:
+- fit: how well clothes fit and flatter the body
+- color: how well colors work together
+- style: how on-trend and aesthetic the outfit is
+- occasion: how appropriate for "${occasion}"
+
+OUTPUT RULES:
+- Be enthusiastic and specific in the verdict — name the exact aesthetic you see
+- vibe: 3-5 punchy words (e.g. "Dark Academia Clean Edge", "Coastal Old Money", "Y2K Streetwear")
+- pros: 2 specific compliments about what's working
+- cons: 1-2 gentle, constructive suggestions (frame positively)
+- upgrade: one specific actionable tip to push the score higher
+
+Analyze this "${occasion}" outfit. Reply ONLY with valid JSON, no markdown fences:
+{"score":84,"breakdown":{"fit":22,"color":21,"style":21,"occasion":20},"vibe":"Clean Quiet Luxury","verdict":"You nailed the quiet luxury brief — neutral palette, clean proportions, nothing fighting for attention. This is the kind of effortless that actually takes taste.","tags":["minimalist","clean","elevated"],"pros":["Color story is tight and intentional","Proportions are doing serious work here"],"cons":["One texture element could add depth"],"upgrade":"A slim leather belt or gold chain would push this into the 90s instantly."}`;
+}
+
+// Enforce score minimums server-side so the model can't ignore the rules
+function enforceMinimums(rating) {
+  let { score, breakdown } = rating;
+  const { fit, color, style, occasion } = breakdown || {};
+
+  // Floor: nothing below 68 unless we have a reason (we can't detect a reason, so just floor at 68)
+  if (score < 68) score = 68;
+
+  // Rebuild breakdown proportionally if it doesn't sum to score
+  const sum = (fit || 0) + (color || 0) + (style || 0) + (occasion || 0);
+  let bd = { fit, color, style, occasion };
+  if (sum !== score && sum > 0) {
+    const ratio = score / sum;
+    bd = {
+      fit: Math.round(fit * ratio),
+      color: Math.round(color * ratio),
+      style: Math.round(style * ratio),
+      occasion: Math.round(occasion * ratio),
+    };
+    // Fix rounding drift
+    const newSum = bd.fit + bd.color + bd.style + bd.occasion;
+    bd.fit += score - newSum;
+  }
+
+  // Clamp each sub-score to 1-25
+  for (const k of ['fit','color','style','occasion']) {
+    bd[k] = Math.max(1, Math.min(25, bd[k] || 17));
+  }
+
+  return { ...rating, score, breakdown: bd };
 }
 
 export default {
@@ -69,7 +112,7 @@ export default {
               { type: "text", text: buildPrompt(occasion) },
             ],
           }],
-          max_tokens: 512,
+          max_tokens: 600,
         }
       );
     } catch (e) {
@@ -82,7 +125,8 @@ export default {
     if (!match) return json({ error: "Could not parse AI response" }, 502);
 
     try {
-      const rating = JSON.parse(match[0]);
+      const raw = JSON.parse(match[0]);
+      const rating = enforceMinimums(raw);
       return json(rating);
     } catch {
       return json({ error: "Invalid JSON from AI" }, 502);
