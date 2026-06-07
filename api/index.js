@@ -113,6 +113,7 @@ export default {
             ],
           }],
           max_tokens: 600,
+          temperature: 0,
         }
       );
     } catch (e) {
