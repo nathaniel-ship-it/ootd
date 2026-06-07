@@ -7,7 +7,8 @@ const OCCASIONS = ["everyday","date night","work","party","gym","travel"];
 const FAKE_DOMAINS = ["test.com","fake.com","mailinator.com","guerrillamail.com","tempmail.com","throwaway.email","yopmail.com","sharklasers.com","trashmail.com","10minutemail.com","fakeinbox.com","spamgourmet.com","maildrop.cc","dispostable.com","example.com","sample.com"];
 
 // ── Promo Codes — add or remove codes here ──
-const PROMO_CODES = new Set(["OOTD50","LAUNCH50","STYLE50","VIBE50","EARLYBIRD"]);
+const PROMO_CODES = new Set(["OOTD50","LAUNCH50","STYLE50","VIBE50","EARLYBIRD","TEST1"]);
+const FREE_CODES  = new Set(["TEST1"]); // these unlock Pro for free (no payment)
 
 function normalizePhone(p) { return (p||"").replace(/\D/g,""); }
 function getUserDataByPhone(phone) {
@@ -742,11 +743,12 @@ function PaywallModal({onClose,onSubscribe}) {
   const [promoInput,setPromoInput] = useState("");
   const [promoApplied,setPromoApplied] = useState(false);
   const [promoError,setPromoError] = useState("");
+  const isFree = FREE_CODES.has(promoApplied);
 
   const applyPromo = () => {
     const code = promoInput.trim().toUpperCase();
     if (!code) return;
-    if (PROMO_CODES.has(code)) { setPromoApplied(true); setPromoError(""); }
+    if (PROMO_CODES.has(code)) { setPromoApplied(code); setPromoError(""); }
     else { setPromoError("Invalid code. Try again."); setPromoApplied(false); }
   };
 
@@ -795,12 +797,12 @@ function PaywallModal({onClose,onSubscribe}) {
             <div>
               <div style={{fontSize:12,color:"#000"}}>OOTD Pro · Monthly</div>
               <div style={{fontSize:10,color:promoApplied?"#16a34a":"#888"}}>
-                {promoApplied ? "50% off · First month discount applied ✓" : "Cancel anytime in Settings"}
+                {promoApplied ? (isFree ? "Free · No payment needed ✓" : "50% off · First month discount applied ✓") : "Cancel anytime in Settings"}
               </div>
             </div>
             <div style={{textAlign:"right"}}>
               {promoApplied&&<div style={{fontSize:11,color:"#bbb",textDecoration:"line-through",lineHeight:1}}>$7.99</div>}
-              <div style={{fontSize:20,fontWeight:700,color:promoApplied?"#16a34a":"#000",fontFamily:"'Playfair Display',Georgia,serif"}}>{promoApplied?"$3.99":"$7.99"}</div>
+              <div style={{fontSize:20,fontWeight:700,color:promoApplied?"#16a34a":"#000",fontFamily:"'Playfair Display',Georgia,serif"}}>{isFree?"Free":promoApplied?"$3.99":"$7.99"}</div>
             </div>
           </div>
 
@@ -826,7 +828,7 @@ function PaywallModal({onClose,onSubscribe}) {
 
           {error&&<p style={{color:"#c00",fontSize:11,marginBottom:12,textAlign:"center",lineHeight:1.5}}>{error}</p>}
           <button onClick={handlePurchase} disabled={loading} style={{width:"100%",background:loading?"#e0e0e0":promoApplied?"#16a34a":"#000",color:loading?"#aaa":"#fff",border:"none",borderRadius:12,padding:"16px 0",fontSize:14,fontWeight:600,cursor:loading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10}}>
-            {loading ? "Connecting to App Store..." : promoApplied ? "Redeem Code · $3.99/month →" : (<>
+            {loading ? "Connecting to App Store..." : isFree ? "Claim Free Pro →" : promoApplied ? "Redeem Code · $3.99/month →" : (<>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
               Subscribe $7.99/month
             </>)}
@@ -845,7 +847,7 @@ function PaywallModal({onClose,onSubscribe}) {
             <div style={{width:72,height:72,borderRadius:"50%",background:"#000",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 24px"}}><span style={{fontSize:28,color:"#fff"}}>✦</span></div>
             <div style={{fontSize:24,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:"#000",marginBottom:10}}>You're Pro now!</div>
             <div style={{fontSize:11,color:"#888",lineHeight:1.7,marginBottom:28}}>
-              {promoApplied ? "Promo code applied. Enjoy your first month at $3.99." : "Payment confirmed via App Store."}<br/>Unlimited outfit ratings unlocked.
+              {isFree ? "Code applied. Pro unlocked for free." : promoApplied ? "Promo code applied. Enjoy your first month at $3.99." : "Payment confirmed via App Store."}<br/>Unlimited outfit ratings unlocked.
             </div>
             <button onClick={onSubscribe} style={{background:"#000",color:"#fff",border:"none",borderRadius:12,padding:"14px 40px",fontSize:11,fontWeight:600,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace"}}>Start Rating →</button>
           </div>
