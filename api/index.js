@@ -48,6 +48,41 @@ Analyze this "${occasion}" outfit. Reply ONLY with valid JSON, no markdown fence
 {"score":84,"breakdown":{"fit":22,"color":21,"style":21,"occasion":20},"vibe":"Clean Quiet Luxury","verdict":"You nailed the quiet luxury brief — neutral palette, clean proportions, nothing fighting for attention. This is the kind of effortless that actually takes taste.","tags":["minimalist","clean","elevated"],"pros":["Color story is tight and intentional","Proportions are doing serious work here"],"cons":["One texture element could add depth"],"upgrade":"A slim leather belt or gold chain would push this into the 90s instantly."}`;
 }
 
+const AESTHETICS = [
+  "Old Money","Quiet Luxury","Dark Academia","Clean Girl","Coastal Cowgirl",
+  "Streetwear","Soft Boy","Tomboy Chic","Mob Wife","Indie Sleaze","Gorpcore",
+  "Balletcore","Coquette","Techwear","Preppy","Y2K","Boho Luxe","Corporate Baddie",
+  "Skater Grunge","Athleisure","Cottagecore","Grunge","Minimalist","Hypebeast",
+  "Business Casual","Casual Cool","Smart Casual","Maximalist","Edgy","Vintage"
+];
+
+// If the AI returns a vague or made-up vibe, snap it to the closest real aesthetic
+function cleanVibe(vibe) {
+  if (!vibe) return "Clean Girl";
+  const v = vibe.toLowerCase();
+  // Already a known aesthetic (or close enough) — just title-case it and return
+  for (const a of AESTHETICS) {
+    if (v.includes(a.toLowerCase())) return a;
+  }
+  // Keyword mapping for common AI outputs
+  if (v.includes("luxury") || v.includes("rich") || v.includes("elegant")) return "Old Money";
+  if (v.includes("street") || v.includes("urban") || v.includes("hype")) return "Streetwear";
+  if (v.includes("academic") || v.includes("scholar") || v.includes("book")) return "Dark Academia";
+  if (v.includes("clean") || v.includes("minimal") || v.includes("simple")) return "Clean Girl";
+  if (v.includes("athletic") || v.includes("sport") || v.includes("gym")) return "Athleisure";
+  if (v.includes("tech") || v.includes("futur")) return "Techwear";
+  if (v.includes("vintage") || v.includes("retro") || v.includes("thrift")) return "Vintage";
+  if (v.includes("grunge") || v.includes("punk") || v.includes("rock")) return "Grunge";
+  if (v.includes("boho") || v.includes("bohemian") || v.includes("earthy")) return "Boho Luxe";
+  if (v.includes("preppy") || v.includes("ivy") || v.includes("polo")) return "Preppy";
+  if (v.includes("y2k") || v.includes("2000") || v.includes("millennial")) return "Y2K";
+  if (v.includes("ballet") || v.includes("dance") || v.includes("feminine")) return "Balletcore";
+  if (v.includes("corp") || v.includes("office") || v.includes("work")) return "Corporate Baddie";
+  if (v.includes("casual") || v.includes("comfy") || v.includes("everyday")) return "Casual Cool";
+  if (v.includes("mob") || v.includes("glam") || v.includes("fur")) return "Mob Wife";
+  return "Clean Girl"; // safe fallback
+}
+
 // Enforce score minimums server-side so the model can't ignore the rules
 function enforceMinimums(rating) {
   let { score, breakdown } = rating;
@@ -77,7 +112,7 @@ function enforceMinimums(rating) {
     bd[k] = Math.max(1, Math.min(25, bd[k] || 17));
   }
 
-  return { ...rating, score, breakdown: bd };
+  return { ...rating, score, breakdown: bd, vibe: cleanVibe(rating.vibe) };
 }
 
 export default {
