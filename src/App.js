@@ -174,7 +174,7 @@ const DARK = {
   text:"#fff", muted:"rgba(255,255,255,0.6)", faint:"rgba(255,255,255,0.25)",
   accent:"#a8ff78", gold:"#FFD166", red:"#e05555",
   card:"#fff", cardText:"#000",
-  softCard:"rgba(255,255,255,0.05)", softBorder:"rgba(255,255,255,0.1)",
+  softCard:"rgba(255,255,255,0.08)", softBorder:"rgba(255,255,255,0.14)",
   navBg:"rgba(8,8,8,0.97)", navBorder:"rgba(255,255,255,0.12)",
   inputBg:"#1a1a1a", inputBorder:"rgba(255,255,255,0.15)", inputText:"#fff",
   authCard:"#141414", authTab:"#1e1e1e", authTabActive:"#fff", authTabActiveText:"#000",
@@ -187,7 +187,7 @@ const LIGHT = {
   text:"#111", muted:"rgba(0,0,0,0.5)", faint:"rgba(0,0,0,0.28)",
   accent:"#2a7a2a", gold:"#a06800", red:"#b83030",
   card:"#111", cardText:"#fff",
-  softCard:"rgba(0,0,0,0.04)", softBorder:"rgba(0,0,0,0.1)",
+  softCard:"rgba(0,0,0,0.04)", softBorder:"rgba(0,0,0,0.12)",
   navBg:"rgba(250,250,248,0.97)", navBorder:"rgba(0,0,0,0.08)",
   inputBg:"#f2f0ec", inputBorder:"rgba(0,0,0,0.12)", inputText:"#111",
   authCard:"#fff", authTab:"#f2f0ec", authTabActive:"#111", authTabActiveText:"#fff",
@@ -910,9 +910,9 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         {[["Total",u.totalRatings||0],["Since",u.joinedAt||"Today"],["Week",isPro?"∞":`${usageLeft}/1`],["Status",isPro?"Pro ✦":"Free"]].map(([label,val])=>(
-          <div key={label} style={{background:dark?T.bg2:T.card,borderRadius:14,padding:18,boxShadow:dark?"none":"0 2px 16px rgba(0,0,0,0.1)"}}>
-            <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>{label}</div>
-            <div style={{fontSize:15,fontFamily:"'Playfair Display',Georgia,serif",color:label==="Status"&&isPro?"#FFD166":dark?T.text:T.cardText}}>{val}</div>
+          <div key={label} style={{background:T.softCard,borderRadius:14,padding:18,border:`1px solid ${T.softBorder}`}}>
+            <div style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>{label}</div>
+            <div style={{fontSize:15,fontFamily:"'Playfair Display',Georgia,serif",color:label==="Status"&&isPro?"#FFD166":T.text}}>{val}</div>
           </div>
         ))}
       </div>
@@ -955,11 +955,11 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
           </div>
         );
       })()}
-      <div style={{background:dark?T.bg2:T.card,borderRadius:14,overflow:"hidden",boxShadow:dark?"none":"0 2px 16px rgba(0,0,0,0.1)"}}>
+      <div style={{background:T.softCard,borderRadius:14,overflow:"hidden",border:`1px solid ${T.softBorder}`}}>
         {[["Sign Out","→","signout"],["Account Settings","→","account"],["Privacy Policy","→","privacy"],["Terms of Service","→","terms"],["Delete Account","⚠","delete"]].map(([label,icon,action],i)=>(
-          <div key={label} onClick={()=>{if(action==="delete")setShowDelete(true);else if(action==="account")setShowAccountSettings(true);else if(action==="signout")setShowSignOutConfirm(true);else setLegalModal(action);}} style={{padding:"15px 18px",borderBottom:i<4?`1px solid ${dark?T.border:T.cardText+"11"}`:"none",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
-            <span style={{fontSize:12,color:label==="Delete Account"?"#ff6666":dark?T.text:T.cardText}}>{label}</span>
-            <span style={{fontSize:12,color:dark?T.faint:`${T.cardText}33`}}>{icon}</span>
+          <div key={label} onClick={()=>{if(action==="delete")setShowDelete(true);else if(action==="account")setShowAccountSettings(true);else if(action==="signout")setShowSignOutConfirm(true);else setLegalModal(action);}} style={{padding:"15px 18px",borderBottom:i<4?`1px solid ${T.border}`:"none",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
+            <span style={{fontSize:12,color:label==="Delete Account"?T.red:T.text}}>{label}</span>
+            <span style={{fontSize:12,color:T.faint}}>{icon}</span>
           </div>
         ))}
       </div>
@@ -1775,18 +1775,22 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
 
                     {result.breakdown&&(
                       <div style={{background:T.softCard,borderRadius:14,padding:18,marginBottom:14,border:`1px solid ${T.softBorder}`}}>
-                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:14}}>Score Breakdown</p>
-                        {[["Fit & Silhouette",result.breakdown.fit,25],["Color Coordination",result.breakdown.color,25],["Style Coherence",result.breakdown.style,25],["Occasion Match",result.breakdown.occasion,25]].map(([label,val,max])=>(
-                          <div key={label} style={{marginBottom:10}}>
+                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:14}}>Score Breakdown · {result.breakdown.fit+result.breakdown.color+result.breakdown.style+result.breakdown.occasion}/100</p>
+                        {[["Fit & Silhouette",result.breakdown.fit,25],["Color Coordination",result.breakdown.color,25],["Style Coherence",result.breakdown.style,25],["Occasion Match",result.breakdown.occasion,25]].map(([label,val,max])=>{
+                          const pct = val/max;
+                          const barColor = pct>=0.8?(dark?"#a8ff78":"#2a7a2a"):pct>=0.65?(dark?"#FFD166":"#c48800"):(dark?"#ff8c6b":"#d44");
+                          return (
+                          <div key={label} style={{marginBottom:12}}>
                             <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
                               <span style={{fontSize:10,color:T.text,fontWeight:500}}>{label}</span>
-                              <span style={{fontSize:10,color:T.text,fontWeight:700}}>{val}/{max}</span>
+                              <span style={{fontSize:10,color:barColor,fontWeight:700}}>{val}/{max}</span>
                             </div>
-                            <div style={{background:T.border,borderRadius:4,height:4}}>
-                              <div style={{background:T.text,borderRadius:4,height:4,width:`${(val/max)*100}%`,transition:"width 1s ease"}}/>
+                            <div style={{background:T.border,borderRadius:4,height:5}}>
+                              <div style={{background:barColor,borderRadius:4,height:5,width:`${pct*100}%`,transition:"width 1s ease"}}/>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 

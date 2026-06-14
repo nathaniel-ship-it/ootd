@@ -83,47 +83,47 @@ function cleanVibe(vibe) {
   return "Clean Girl"; // safe fallback
 }
 
-// Enforce score minimums server-side so the model can't ignore the rules
 function enforceMinimums(rating) {
   let { score, breakdown } = rating;
-  const { fit, color, style, occasion } = breakdown || {};
+  let { fit = 17, color = 17, style = 17, occasion = 14 } = breakdown || {};
 
-  // Floor: nothing below 65
+  // Score floor
   if (score < 65) score = 65;
 
-  // Rebuild breakdown proportionally if it doesn't sum to score
-  const sum = (fit || 0) + (color || 0) + (style || 0) + (occasion || 0);
-  let bd = { fit, color, style, occasion };
-  if (sum !== score && sum > 0) {
-    const ratio = score / sum;
-    bd = {
-      fit: Math.round(fit * ratio),
-      color: Math.round(color * ratio),
-      style: Math.round(style * ratio),
-      occasion: Math.round(occasion * ratio),
-    };
-    // Fix rounding drift
-    const newSum = bd.fit + bd.color + bd.style + bd.occasion;
-    bd.fit += score - newSum;
+  // Hard cap occasion — model always maxes this out, cap at 22
+  occasion = Math.min(occasion, 22);
+
+  // Clamp all sub-scores to valid ranges
+  fit      = Math.max(1, Math.min(25, fit));
+  color    = Math.max(1, Math.min(25, color));
+  style    = Math.max(1, Math.min(25, style));
+  occasion = Math.max(1, Math.min(22, occasion));
+
+  // Scale breakdown to match the total score
+  const sum = fit + color + style + occasion;
+  if (sum > 0 && sum !== score) {
+    const r = score / sum;
+    fit      = Math.round(fit * r);
+    color    = Math.round(color * r);
+    style    = Math.round(style * r);
+    occasion = Math.round(occasion * r);
   }
 
-  // Clamp each sub-score to 1-25
-  for (const k of ['fit','color','style','occasion']) {
-    bd[k] = Math.max(1, Math.min(25, bd[k] || 17));
-  }
-  // After clamping, re-fix any drift so sub-scores always sum to the total score
-  const clampedSum = bd.fit + bd.color + bd.style + bd.occasion;
-  if (clampedSum !== score) {
-    let diff = score - clampedSum;
-    for (const k of ['fit','color','style','occasion']) {
-      if (diff === 0) break;
-      const adj = diff > 0 ? Math.min(25 - bd[k], diff) : Math.max(1 - bd[k], diff);
-      bd[k] += adj;
-      diff -= adj;
-    }
+  // Fix rounding drift — spread across categories that still have room
+  let diff = score - (fit + color + style + occasion);
+  for (const k of ['fit', 'color', 'style', 'occasion']) {
+    if (diff === 0) break;
+    const maxVal = k === 'occasion' ? 22 : 25;
+    const cur = k === 'fit' ? fit : k === 'color' ? color : k === 'style' ? style : occasion;
+    const adj = diff > 0 ? Math.min(maxVal - cur, diff) : Math.max(1 - cur, diff);
+    if (k === 'fit')        fit      += adj;
+    else if (k === 'color') color    += adj;
+    else if (k === 'style') style    += adj;
+    else                    occasion += adj;
+    diff -= adj;
   }
 
-  return { ...rating, score, breakdown: bd, vibe: cleanVibe(rating.vibe) };
+  return { ...rating, score, breakdown: { fit, color, style, occasion }, vibe: cleanVibe(rating.vibe) };
 }
 
 export default {
