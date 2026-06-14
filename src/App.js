@@ -174,7 +174,7 @@ const DARK = {
   text:"#fff", muted:"rgba(255,255,255,0.6)", faint:"rgba(255,255,255,0.25)",
   accent:"#a8ff78", gold:"#FFD166", red:"#e05555",
   card:"#fff", cardText:"#000",
-  softCard:"rgba(255,255,255,0.08)", softBorder:"rgba(255,255,255,0.14)",
+  card2:"#1e1e1e", card2Border:"rgba(255,255,255,0.1)", card2Shadow:"none",
   navBg:"rgba(8,8,8,0.97)", navBorder:"rgba(255,255,255,0.12)",
   inputBg:"#1a1a1a", inputBorder:"rgba(255,255,255,0.15)", inputText:"#fff",
   authCard:"#141414", authTab:"#1e1e1e", authTabActive:"#fff", authTabActiveText:"#000",
@@ -187,7 +187,7 @@ const LIGHT = {
   text:"#111", muted:"rgba(0,0,0,0.5)", faint:"rgba(0,0,0,0.28)",
   accent:"#2a7a2a", gold:"#a06800", red:"#b83030",
   card:"#111", cardText:"#fff",
-  softCard:"rgba(0,0,0,0.04)", softBorder:"rgba(0,0,0,0.12)",
+  card2:"#fff", card2Border:"rgba(0,0,0,0.08)", card2Shadow:"0 1px 8px rgba(0,0,0,0.07)",
   navBg:"rgba(250,250,248,0.97)", navBorder:"rgba(0,0,0,0.08)",
   inputBg:"#f2f0ec", inputBorder:"rgba(0,0,0,0.12)", inputText:"#111",
   authCard:"#fff", authTab:"#f2f0ec", authTabActive:"#111", authTabActiveText:"#fff",
@@ -617,7 +617,7 @@ function HistoryPage({email, dark, onRate, onUpgrade, isPro}) {
       {/* Stats */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
         {[["🔥",streak>0?`${streak}d`:"0d","Streak"],["◎",avg,"Avg"],["✦",best,"Best"]].map(([icon,val,label])=>(
-          <div key={label} style={{background:T.softCard,borderRadius:16,padding:"16px 10px",textAlign:"center",border:`1px solid ${T.softBorder}`}}>
+          <div key={label} style={{background:T.card2,borderRadius:16,padding:"16px 10px",textAlign:"center",border:`1px solid ${T.card2Border}`,boxShadow:T.card2Shadow}}>
             <div style={{fontSize:16,marginBottom:4}}>{icon}</div>
             <div style={{fontSize:22,fontWeight:800,fontFamily:"'Playfair Display',Georgia,serif",color:T.text,lineHeight:1}}>{val}</div>
             <div style={{fontSize:8,color:T.muted,letterSpacing:2,textTransform:"uppercase",marginTop:4}}>{label}</div>
@@ -735,7 +735,7 @@ function StyleProfilePage({email, dark, isPro, onUpgrade}) {
           <div style={{fontSize:8,color:T.muted,letterSpacing:4,textTransform:"uppercase",marginBottom:14}}>Your Aesthetic</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {topTags.map((t,i)=>(
-              <span key={t} style={{fontSize:i===0?15:10,fontWeight:i===0?800:400,fontFamily:i===0?"'Playfair Display',Georgia,serif":"'DM Mono',monospace",letterSpacing:i===0?-0.5:1.5,textTransform:"uppercase",padding:i===0?"8px 18px":"6px 14px",borderRadius:20,background:T.softCard,color:T.text,border:`1px solid ${T.softBorder}`}}>{t}</span>
+              <span key={t} style={{fontSize:i===0?15:10,fontWeight:i===0?800:400,fontFamily:i===0?"'Playfair Display',Georgia,serif":"'DM Mono',monospace",letterSpacing:i===0?-0.5:1.5,textTransform:"uppercase",padding:i===0?"8px 18px":"6px 14px",borderRadius:20,background:T.card2,color:T.text,border:`1px solid ${T.card2Border}`}}>{t}</span>
             ))}
           </div>
         </div>
@@ -910,7 +910,7 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         {[["Total",u.totalRatings||0],["Since",u.joinedAt||"Today"],["Week",isPro?"∞":`${usageLeft}/1`],["Status",isPro?"Pro ✦":"Free"]].map(([label,val])=>(
-          <div key={label} style={{background:T.softCard,borderRadius:14,padding:18,border:`1px solid ${T.softBorder}`}}>
+          <div key={label} style={{background:T.card2,borderRadius:14,padding:18,border:`1px solid ${T.card2Border}`,boxShadow:T.card2Shadow}}>
             <div style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>{label}</div>
             <div style={{fontSize:15,fontFamily:"'Playfair Display',Georgia,serif",color:label==="Status"&&isPro?"#FFD166":T.text}}>{val}</div>
           </div>
@@ -955,7 +955,7 @@ function ProfilePage({user,onUpgrade,isPro,usageLeft,setAvatar,dark,onDelete,onC
           </div>
         );
       })()}
-      <div style={{background:T.softCard,borderRadius:14,overflow:"hidden",border:`1px solid ${T.softBorder}`}}>
+      <div style={{background:T.card2,borderRadius:14,overflow:"hidden",border:`1px solid ${T.card2Border}`,boxShadow:T.card2Shadow}}>
         {[["Sign Out","→","signout"],["Account Settings","→","account"],["Privacy Policy","→","privacy"],["Terms of Service","→","terms"],["Delete Account","⚠","delete"]].map(([label,icon,action],i)=>(
           <div key={label} onClick={()=>{if(action==="delete")setShowDelete(true);else if(action==="account")setShowAccountSettings(true);else if(action==="signout")setShowSignOutConfirm(true);else setLegalModal(action);}} style={{padding:"15px 18px",borderBottom:i<4?`1px solid ${T.border}`:"none",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
             <span style={{fontSize:12,color:label==="Delete Account"?T.red:T.text}}>{label}</span>
@@ -1756,26 +1756,22 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                   </div>
                 ):(
                   <>
-                    <div style={{textAlign:"center",paddingBottom:24}}>
-                      {imageB64&&<img src={`data:${imageMime};base64,${imageB64}`} alt="" style={{width:70,height:88,objectFit:imageFit,borderRadius:14,border:`2px solid ${T.border2}`,marginBottom:20}}/>}
-                      <div style={{position:"relative",display:"inline-block",marginBottom:14}}>
-                        <ScoreRing score={animScore} size={150} dark={dark}/>
+                    <div style={{textAlign:"center",paddingBottom:28}}>
+                      {imageB64&&<img src={`data:${imageMime};base64,${imageB64}`} alt="" style={{width:72,height:90,objectFit:imageFit,borderRadius:16,border:`2px solid ${T.border2}`,marginBottom:22,boxShadow:dark?"none":"0 4px 20px rgba(0,0,0,0.12)"}}/>}
+                      <div style={{position:"relative",display:"inline-block",marginBottom:16}}>
+                        <ScoreRing score={animScore} size={160} dark={dark}/>
                         <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-                          <div style={{fontSize:46,fontWeight:800,color:animScore>=80?"#2d7a2d":animScore>=65?"#b8860b":"#c0392b",lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif"}}>{animScore}</div>
-                          <div style={{fontSize:9,color:T.faint,letterSpacing:2}}>/100</div>
+                          <div style={{fontSize:52,fontWeight:800,color:animScore>=80?T.accent:animScore>=65?(dark?"#FFD166":"#c48800"):T.red,lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif",letterSpacing:-2}}>{animScore}</div>
+                          <div style={{fontSize:9,color:T.faint,letterSpacing:2,marginTop:2}}>/100</div>
                         </div>
                       </div>
-                      <div style={{position:"relative",display:"inline-block",marginBottom:8}}>
-                        <Star color={dColor} size={13} style={{position:"absolute",top:-16,left:-20}}/>
-                        <Star color={dColor} size={9} style={{position:"absolute",top:-10,right:-16}}/>
-                        <div style={{fontSize:19,fontFamily:"'Playfair Display',Georgia,serif",color:T.text}}>"{result.vibe}"</div>
-                      </div>
-                      <div style={{fontSize:12,color:T.muted,lineHeight:1.7,maxWidth:320,margin:"10px auto 0"}}>{result.verdict}</div>
+                      <div style={{fontSize:22,fontFamily:"'Playfair Display',Georgia,serif",fontWeight:800,color:T.text,marginBottom:8,letterSpacing:-0.5}}>"{result.vibe}"</div>
+                      <div style={{fontSize:12,color:T.muted,lineHeight:1.75,maxWidth:300,margin:"0 auto"}}>{result.verdict}</div>
                     </div>
 
                     {result.breakdown&&(
-                      <div style={{background:T.softCard,borderRadius:14,padding:18,marginBottom:14,border:`1px solid ${T.softBorder}`}}>
-                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:14}}>Score Breakdown · {result.breakdown.fit+result.breakdown.color+result.breakdown.style+result.breakdown.occasion}/100</p>
+                      <div style={{background:T.card2,borderRadius:16,padding:20,marginBottom:12,border:`1px solid ${T.card2Border}`,boxShadow:T.card2Shadow}}>
+                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:16}}>Breakdown</p>
                         {[["Fit & Silhouette",result.breakdown.fit,25],["Color Coordination",result.breakdown.color,25],["Style Coherence",result.breakdown.style,25],["Occasion Match",result.breakdown.occasion,25]].map(([label,val,max])=>{
                           const pct = val/max;
                           const barColor = pct>=0.8?(dark?"#a8ff78":"#2a7a2a"):pct>=0.65?(dark?"#FFD166":"#c48800"):(dark?"#ff8c6b":"#d44");
@@ -1798,22 +1794,20 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                       {result.tags?.map(t=><span key={t} style={{background:T.card,color:T.cardText,fontSize:9,padding:"5px 14px",borderRadius:20,letterSpacing:2,textTransform:"uppercase",fontWeight:600,boxShadow:dark?"none":"0 1px 8px rgba(0,0,0,0.1)"}}>{t}</span>)}
                     </div>
 
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-                      <div style={{background:T.softCard,borderRadius:14,padding:16,border:`1px solid ${T.softBorder}`}}>
-                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Working ✓</p>
-                        {result.pros?.map((p,i)=><p key={i} style={{fontSize:11,color:T.accent,marginBottom:6,lineHeight:1.5}}>{p}</p>)}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                      <div style={{background:T.card2,borderRadius:16,padding:16,border:`1px solid ${T.card2Border}`,boxShadow:T.card2Shadow}}>
+                        <p style={{fontSize:8,color:T.accent,letterSpacing:3,textTransform:"uppercase",marginBottom:10,fontWeight:600}}>Working</p>
+                        {result.pros?.map((p,i)=><p key={i} style={{fontSize:11,color:T.text,marginBottom:6,lineHeight:1.55}}>{p}</p>)}
                       </div>
-                      <div style={{background:T.softCard,borderRadius:14,padding:16,border:`1px solid ${T.softBorder}`}}>
-                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Fix This ✗</p>
-                        {result.cons?.map((c,i)=><p key={i} style={{fontSize:11,color:T.text,marginBottom:6,lineHeight:1.5}}>{c}</p>)}
+                      <div style={{background:T.card2,borderRadius:16,padding:16,border:`1px solid ${T.card2Border}`,boxShadow:T.card2Shadow}}>
+                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:10,fontWeight:600}}>Level Up</p>
+                        {result.cons?.map((c,i)=><p key={i} style={{fontSize:11,color:T.text,marginBottom:6,lineHeight:1.55}}>{c}</p>)}
                       </div>
                     </div>
 
-                    <div style={{background:T.softCard,borderRadius:14,padding:16,marginBottom:20,border:`1px solid ${T.softBorder}`}}>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase"}}>Upgrade Move</p>
-                      </div>
-                      <p style={{fontSize:12,color:T.text,lineHeight:1.6}}>{result.upgrade}</p>
+                    <div style={{background:T.card2,borderRadius:16,padding:18,marginBottom:20,border:`1px solid ${T.card2Border}`,boxShadow:T.card2Shadow}}>
+                      <p style={{fontSize:8,color:dark?"#FFD166":"#c48800",letterSpacing:3,textTransform:"uppercase",marginBottom:10,fontWeight:600}}>Upgrade Move ✦</p>
+                      <p style={{fontSize:12,color:T.text,lineHeight:1.65}}>{result.upgrade}</p>
                     </div>
 
                     <div style={{marginBottom:16}}>
