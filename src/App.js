@@ -130,6 +130,14 @@ function useAuth() {
     if (u.password !== password) return "Incorrect password.";
     const s = {email:norm, name:u.name}; store.set("ootd_u", s); setUser(s); return null;
   };
+  const loginByPhone = (phone, password) => {
+    const digits = normalizePhone(phone);
+    if (digits.length < 7) return "Enter a valid phone number.";
+    const r = getUserDataByPhone(digits);
+    if (!r) return "No account found for this phone number.";
+    if (r.data.password !== password) return "Incorrect password.";
+    const s = {email:r.email, name:r.data.name}; store.set("ootd_u", s); setUser(s); return null;
+  };
   const signup = (name, email, password, phone) => {
     const norm = normalizeEmail(email);
     if (!name.trim()) return "Enter your name.";
@@ -157,7 +165,7 @@ function useAuth() {
   };
   const setAvatar = (email,b64) => { const u=getUserData(email); if(u) setUserData(email,{...u,avatar:b64}); };
   const setOnboarded = email => { const u=getUserData(email); if(u) setUserData(email,{...u,onboarded:true}); };
-  return {user,login,signup,logout,setPro,removePro,setAvatar,setOnboarded};
+  return {user,login,loginByPhone,signup,logout,setPro,removePro,setAvatar,setOnboarded};
 }
 
 const DARK = {
@@ -607,10 +615,10 @@ function HistoryPage({email, dark, onRate, onUpgrade, isPro}) {
       {/* Stats */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
         {[["🔥",streak>0?`${streak}d`:"0d","Streak"],["◎",avg,"Avg"],["✦",best,"Best"]].map(([icon,val,label])=>(
-          <div key={label} style={{background:"#111",borderRadius:16,padding:"16px 10px",textAlign:"center"}}>
+          <div key={label} style={{background:T.bg3,borderRadius:16,padding:"16px 10px",textAlign:"center",border:`1px solid ${T.border}`}}>
             <div style={{fontSize:16,marginBottom:4}}>{icon}</div>
-            <div style={{fontSize:22,fontWeight:800,fontFamily:"'Playfair Display',Georgia,serif",color:"#fff",lineHeight:1}}>{val}</div>
-            <div style={{fontSize:8,color:"rgba(255,255,255,0.55)",letterSpacing:2,textTransform:"uppercase",marginTop:4}}>{label}</div>
+            <div style={{fontSize:22,fontWeight:800,fontFamily:"'Playfair Display',Georgia,serif",color:T.text,lineHeight:1}}>{val}</div>
+            <div style={{fontSize:8,color:T.muted,letterSpacing:2,textTransform:"uppercase",marginTop:4}}>{label}</div>
           </div>
         ))}
       </div>
@@ -679,12 +687,12 @@ function StyleProfilePage({email, dark, isPro, onUpgrade}) {
       {/* Score + trend */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:24,paddingBottom:20,borderBottom:`1px solid ${T.border}`}}>
         <div>
-          <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:4,textTransform:"uppercase",marginBottom:6}}>Avg Score</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:4,textTransform:"uppercase",marginBottom:6}}>Avg Score</div>
           <div style={{fontSize:64,fontWeight:800,color:scoreColor,lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif"}}>{avgScore}</div>
           <div style={{fontSize:9,color:T.faint,marginTop:6}}>{history.length} outfits rated</div>
         </div>
         <div style={{textAlign:"right",paddingBottom:8}}>
-          <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Trend</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Trend</div>
           <div style={{fontSize:22,fontWeight:800,color:trend>3?(dark?"#a8ff78":"#1a7a1a"):trend<-3?(dark?"#ff6b6b":"#c00"):T.faint,fontFamily:"'Playfair Display',Georgia,serif"}}>{trend>3?"↑":trend<-3?"↓":"→"}</div>
         </div>
       </div>
@@ -694,7 +702,7 @@ function StyleProfilePage({email, dark, isPro, onUpgrade}) {
         {dims.map(([label,val],i)=>(
           <div key={label} style={{textAlign:"center",padding:"0 8px",borderRight:i<3?`1px solid ${T.border}`:"none"}}>
             <div style={{fontSize:26,fontWeight:800,color:T.text,fontFamily:"'Playfair Display',Georgia,serif",lineHeight:1}}>{val}</div>
-            <div style={{fontSize:7,color:"rgba(255,255,255,0.6)",letterSpacing:2,textTransform:"uppercase",marginTop:6}}>{label}</div>
+            <div style={{fontSize:7,color:T.muted,letterSpacing:2,textTransform:"uppercase",marginTop:6}}>{label}</div>
           </div>
         ))}
       </div>
@@ -702,11 +710,11 @@ function StyleProfilePage({email, dark, isPro, onUpgrade}) {
       {/* Best / worst */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,paddingBottom:20,borderBottom:`1px solid ${T.border}`}}>
         <div>
-          <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Strongest</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Strongest</div>
           <div style={{fontSize:22,fontWeight:800,color:dark?"#a8ff78":"#1a7a1a",fontFamily:"'Playfair Display',Georgia,serif"}}>{strongest[0]}</div>
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Work On</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Work On</div>
           <div style={{fontSize:22,fontWeight:800,color:dark?"#ff6b6b":"#c00",fontFamily:"'Playfair Display',Georgia,serif"}}>{weakest[0]}</div>
         </div>
       </div>
@@ -714,7 +722,7 @@ function StyleProfilePage({email, dark, isPro, onUpgrade}) {
       {/* Streak */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,paddingBottom:20,borderBottom:`1px solid ${T.border}`}}>
         <div>
-          <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Streak</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:6}}>Streak</div>
           <div style={{fontSize:28,fontWeight:800,color:"#f0932b",fontFamily:"'Playfair Display',Georgia,serif"}}>{getStreak(email)}d 🔥</div>
         </div>
       </div>
@@ -722,10 +730,10 @@ function StyleProfilePage({email, dark, isPro, onUpgrade}) {
       {/* Aesthetic */}
       {topTags.length>0&&(
         <div>
-          <div style={{fontSize:8,color:"rgba(255,255,255,0.6)",letterSpacing:4,textTransform:"uppercase",marginBottom:14}}>Your Aesthetic</div>
+          <div style={{fontSize:8,color:T.muted,letterSpacing:4,textTransform:"uppercase",marginBottom:14}}>Your Aesthetic</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {topTags.map((t,i)=>(
-              <span key={t} style={{fontSize:i===0?15:10,fontWeight:i===0?800:400,fontFamily:i===0?"'Playfair Display',Georgia,serif":"'DM Mono',monospace",letterSpacing:i===0?-0.5:1.5,textTransform:"uppercase",padding:i===0?"8px 18px":"6px 14px",borderRadius:20,background:"#111",color:"#fff",border:"1px solid rgba(255,255,255,0.15)"}}>{t}</span>
+              <span key={t} style={{fontSize:i===0?15:10,fontWeight:i===0?800:400,fontFamily:i===0?"'Playfair Display',Georgia,serif":"'DM Mono',monospace",letterSpacing:i===0?-0.5:1.5,textTransform:"uppercase",padding:i===0?"8px 18px":"6px 14px",borderRadius:20,background:T.bg3,color:T.text,border:`1px solid ${T.border2}`}}>{t}</span>
             ))}
           </div>
         </div>
@@ -1309,6 +1317,7 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
   const [forgotFoundEmail,setForgotFoundEmail] = useState("");
   const [forgotPw,setForgotPw] = useState("");
   const [showForgotPw,setShowForgotPw] = useState(false);
+  const [usePhoneLogin,setUsePhoneLogin] = useState(false);
   const nameRef=useRef(),emailRef=useRef(),pwRef=useRef(),phoneRef=useRef();
 
   const handleForgot = () => {
@@ -1337,7 +1346,7 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
     setError(""); setLoading(true);
     setTimeout(()=>{
       const name=nameRef.current?.value||"", email=emailRef.current?.value||"", pw=pwRef.current?.value||"", phone=phoneRef.current?.value||"";
-      const err = mode==="login"?onAuth.login(email,pw):onAuth.signup(name,email,pw,phone);
+      const err = mode==="login"?(usePhoneLogin?onAuth.loginByPhone(phone,pw):onAuth.login(email,pw)):onAuth.signup(name,email,pw,phone);
       if(err){
         if(mode==="login"&&err==="No account found. Please sign up."){
           setMode("signup"); setAcceptedPP(false); setAcceptedTOS(false);
@@ -1379,14 +1388,19 @@ const AuthScreen = memo(function AuthScreen({onAuth}) {
         <div style={{background:T.authCard,borderRadius:20,padding:28,boxShadow:isDark?"none":"0 4px 32px rgba(0,0,0,0.1)"}}>
           <div style={{display:"flex",marginBottom:24,background:T.authTab,borderRadius:10,padding:3}}>
             {["login","signup"].map(m=>(
-              <button key={m} onClick={()=>{setMode(m);setError("");setAcceptedPP(false);setAcceptedTOS(false);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:mode===m?T.authTabActive:"transparent",color:mode===m?T.authTabActiveText:T.muted,fontSize:10,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",fontWeight:mode===m?600:400,transition:"all 0.15s"}}>{m}</button>
+              <button key={m} onClick={()=>{setMode(m);setError("");setAcceptedPP(false);setAcceptedTOS(false);setUsePhoneLogin(false);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:mode===m?T.authTabActive:"transparent",color:mode===m?T.authTabActiveText:T.muted,fontSize:10,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",fontFamily:"'DM Mono',monospace",fontWeight:mode===m?600:400,transition:"all 0.15s"}}>{m}</button>
             ))}
           </div>
           {mode==="signup"&&<input ref={nameRef} placeholder="Full name" style={field}/>}
-          <input ref={emailRef} placeholder="Email address" type="email" style={field}/>
-          {mode==="signup"&&<input ref={phoneRef} placeholder="Phone number (optional)" type="tel" style={field}/>}
+          {mode==="login"
+            ? (usePhoneLogin
+                ? <input ref={phoneRef} placeholder="Phone number" type="tel" style={field}/>
+                : <input ref={emailRef} placeholder="Email address" type="email" style={field}/>)
+            : <><input ref={emailRef} placeholder="Email address" type="email" style={field}/><input ref={phoneRef} placeholder="Phone number (optional)" type="tel" style={field}/></>
+          }
           <input ref={pwRef} placeholder="Password (min 6 chars)" type="password" style={field} onKeyDown={e=>e.key==="Enter"&&canSubmit&&submit()}/>
-          {mode==="login"&&<div style={{textAlign:"right",marginTop:-6,marginBottom:10}}>
+          {mode==="login"&&<div style={{display:"flex",justifyContent:"space-between",marginTop:-6,marginBottom:10}}>
+            <span onClick={()=>{setUsePhoneLogin(v=>!v);setError("");}} style={{fontSize:9,color:T.muted,cursor:"pointer",letterSpacing:1,textDecoration:"underline",fontFamily:"'DM Mono',monospace"}}>{usePhoneLogin?"use email instead":"use phone instead"}</span>
             <span onClick={()=>setForgotStep("enter")} style={{fontSize:9,color:T.muted,cursor:"pointer",letterSpacing:1,textDecoration:"underline",fontFamily:"'DM Mono',monospace"}}>Forgot password?</span>
           </div>}
           {mode==="signup"&&(
@@ -1758,16 +1772,16 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                     </div>
 
                     {result.breakdown&&(
-                      <div style={{background:"#111",borderRadius:14,padding:18,marginBottom:14}}>
-                        <p style={{fontSize:8,color:"rgba(255,255,255,0.65)",letterSpacing:3,textTransform:"uppercase",marginBottom:14}}>Score Breakdown</p>
+                      <div style={{background:T.bg3,borderRadius:14,padding:18,marginBottom:14,border:`1px solid ${T.border}`}}>
+                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:14}}>Score Breakdown</p>
                         {[["Fit & Silhouette",result.breakdown.fit,25],["Color Coordination",result.breakdown.color,25],["Style Coherence",result.breakdown.style,25],["Occasion Match",result.breakdown.occasion,25]].map(([label,val,max])=>(
                           <div key={label} style={{marginBottom:10}}>
                             <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                              <span style={{fontSize:10,color:"rgba(255,255,255,0.85)",fontWeight:500}}>{label}</span>
-                              <span style={{fontSize:10,color:"#fff",fontWeight:700}}>{val}/{max}</span>
+                              <span style={{fontSize:10,color:T.text,fontWeight:500}}>{label}</span>
+                              <span style={{fontSize:10,color:T.text,fontWeight:700}}>{val}/{max}</span>
                             </div>
-                            <div style={{background:"rgba(255,255,255,0.12)",borderRadius:4,height:4}}>
-                              <div style={{background:"#fff",borderRadius:4,height:4,width:`${(val/max)*100}%`,transition:"width 1s ease"}}/>
+                            <div style={{background:T.border,borderRadius:4,height:4}}>
+                              <div style={{background:T.text,borderRadius:4,height:4,width:`${(val/max)*100}%`,transition:"width 1s ease"}}/>
                             </div>
                           </div>
                         ))}
@@ -1779,21 +1793,21 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                     </div>
 
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-                      <div style={{background:"#111",borderRadius:14,padding:16}}>
-                        <p style={{fontSize:8,color:"rgba(255,255,255,0.65)",letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Working ✓</p>
-                        {result.pros?.map((p,i)=><p key={i} style={{fontSize:11,color:"#a8ff78",marginBottom:6,lineHeight:1.5}}>{p}</p>)}
+                      <div style={{background:T.bg3,borderRadius:14,padding:16,border:`1px solid ${T.border}`}}>
+                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Working ✓</p>
+                        {result.pros?.map((p,i)=><p key={i} style={{fontSize:11,color:T.accent,marginBottom:6,lineHeight:1.5}}>{p}</p>)}
                       </div>
-                      <div style={{background:"#111",borderRadius:14,padding:16}}>
-                        <p style={{fontSize:8,color:"rgba(255,255,255,0.65)",letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Fix This ✗</p>
-                        {result.cons?.map((c,i)=><p key={i} style={{fontSize:11,color:"rgba(255,255,255,0.85)",marginBottom:6,lineHeight:1.5}}>{c}</p>)}
+                      <div style={{background:T.bg3,borderRadius:14,padding:16,border:`1px solid ${T.border}`}}>
+                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Fix This ✗</p>
+                        {result.cons?.map((c,i)=><p key={i} style={{fontSize:11,color:T.text,marginBottom:6,lineHeight:1.5}}>{c}</p>)}
                       </div>
                     </div>
 
-                    <div style={{background:"#111",borderRadius:14,padding:16,marginBottom:20}}>
+                    <div style={{background:T.bg3,borderRadius:14,padding:16,marginBottom:20,border:`1px solid ${T.border}`}}>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                        <p style={{fontSize:8,color:"rgba(255,255,255,0.65)",letterSpacing:3,textTransform:"uppercase"}}>Upgrade Move</p>
+                        <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase"}}>Upgrade Move</p>
                       </div>
-                      <p style={{fontSize:12,color:"rgba(255,255,255,0.9)",lineHeight:1.6}}>{result.upgrade}</p>
+                      <p style={{fontSize:12,color:T.text,lineHeight:1.6}}>{result.upgrade}</p>
                     </div>
 
                     <div style={{marginBottom:16}}>

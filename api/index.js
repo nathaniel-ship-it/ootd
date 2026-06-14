@@ -21,21 +21,21 @@ SCORE SCALE (0-100). Use this EXACTLY:
 - Below 68: ONLY for outfits with clear visible problems (clashing colors, broken proportions, dirty/damaged clothes).
 
 HARD MINIMUMS — you MUST follow these, no exceptions:
-- Any outfit that looks clean and intentional: score 80+
-- Monochrome or neutral palette (all black, all white, beige/cream tones, navy): score 85+
-- Clear aesthetic (streetwear, old money, clean girl, Y2K, athleisure, techwear, etc.): score 83+
-- Fitted clothes with good silhouette: fit score 22+/25
-- Neutral color palette: color score 22+/25
-- Accessories visible: add 4 to score
-- Shoes match the vibe: add 3 to score
-- Layering present: add 4 to score
-- When in doubt, go HIGHER — it's better to hype someone up than to discourage them
+- Any outfit that looks clean and intentional: score 75+
+- Monochrome or neutral palette (all black, all white, beige/cream tones, navy): score 79+
+- Clear aesthetic (streetwear, old money, clean girl, Y2K, athleisure, techwear, etc.): score 77+
+- Fitted clothes with good silhouette: fit score 20+/25
+- Neutral color palette: color score 20+/25
+- Accessories visible: add 2 to score
+- Shoes match the vibe: add 2 to score
+- Layering present: add 2 to score
+- When in doubt, go slightly higher — it's better to hype someone up than to discourage them
 
 BREAKDOWN — each sub-score out of 25, they MUST sum to the total score:
 - fit: how well clothes fit and flatter the body
 - color: how well colors work together
 - style: how on-trend and aesthetic the outfit is
-- occasion: how appropriate for "${occasion}"
+- occasion: how appropriate for "${occasion}" — do NOT give 25/25 unless the outfit is genuinely perfect for this occasion; most outfits should score 15-22 here
 
 OUTPUT RULES:
 - Be enthusiastic and specific in the verdict — name the exact aesthetic you see
@@ -88,8 +88,8 @@ function enforceMinimums(rating) {
   let { score, breakdown } = rating;
   const { fit, color, style, occasion } = breakdown || {};
 
-  // Floor: nothing below 72
-  if (score < 72) score = 72;
+  // Floor: nothing below 65
+  if (score < 65) score = 65;
 
   // Rebuild breakdown proportionally if it doesn't sum to score
   const sum = (fit || 0) + (color || 0) + (style || 0) + (occasion || 0);
@@ -110,6 +110,17 @@ function enforceMinimums(rating) {
   // Clamp each sub-score to 1-25
   for (const k of ['fit','color','style','occasion']) {
     bd[k] = Math.max(1, Math.min(25, bd[k] || 17));
+  }
+  // After clamping, re-fix any drift so sub-scores always sum to the total score
+  const clampedSum = bd.fit + bd.color + bd.style + bd.occasion;
+  if (clampedSum !== score) {
+    let diff = score - clampedSum;
+    for (const k of ['fit','color','style','occasion']) {
+      if (diff === 0) break;
+      const adj = diff > 0 ? Math.min(25 - bd[k], diff) : Math.max(1 - bd[k], diff);
+      bd[k] += adj;
+      diff -= adj;
+    }
   }
 
   return { ...rating, score, breakdown: bd, vibe: cleanVibe(rating.vibe) };
