@@ -1761,7 +1761,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                       <div style={{position:"relative",display:"inline-block",marginBottom:16}}>
                         <ScoreRing score={animScore} size={160} dark={dark}/>
                         <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-                          <div style={{fontSize:52,fontWeight:800,color:animScore>=80?T.accent:animScore>=65?(dark?"#FFD166":"#c48800"):T.red,lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif",letterSpacing:-2}}>{animScore}</div>
+                          <div style={{fontSize:52,fontWeight:800,color:result.score>=80?T.accent:result.score>=65?(dark?"#FFD166":"#c48800"):T.red,lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif",letterSpacing:-2}}>{result.score}</div>
                           <div style={{fontSize:9,color:T.faint,letterSpacing:2,marginTop:2}}>/100</div>
                         </div>
                       </div>

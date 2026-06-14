@@ -42,9 +42,9 @@ OUTPUT RULES:
 - upgrade: one actionable tip
 
 Reply ONLY with valid JSON, no markdown:
-{"score":81,"breakdown":{"fit":22,"color":21,"19":"style","occasion":19},"vibe":"Clean Girl","verdict":"Effortless and put-together — the neutral palette does the heavy lifting here.","tags":["minimal","clean","neutral"],"pros":["Proportions are balanced and flattering","Color story is cohesive"],"cons":["Could use one statement piece"],"upgrade":"Add a simple gold necklace to elevate the whole look."}
+{"score":80,"breakdown":{"fit":22,"color":21,"style":20,"occasion":17},"vibe":"Clean Girl","verdict":"Effortless and put-together — the neutral palette does the heavy lifting here.","tags":["minimal","clean","neutral"],"pros":["Proportions are balanced and flattering","Color story is cohesive"],"cons":["Could use one statement piece"],"upgrade":"Add a simple gold necklace to elevate the whole look."}
 
-The JSON example above has score=81 and fit+color+style+occasion=22+21+19+19=81. Always make them match.`;
+Note: score = 22+21+20+17 = 80. The breakdown must always sum exactly to score. Occasion is 17 here because jeans and a top for "everyday" is fine but not optimized for any specific setting.`;
 }
 
 const AESTHETICS = [
