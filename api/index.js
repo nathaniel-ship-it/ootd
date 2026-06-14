@@ -35,7 +35,12 @@ BREAKDOWN — each sub-score out of 25, they MUST sum to the total score:
 - fit: how well clothes fit and flatter the body
 - color: how well colors work together
 - style: how on-trend and aesthetic the outfit is
-- occasion: how appropriate for "${occasion}" — do NOT give 25/25 unless the outfit is genuinely perfect for this occasion; most outfits should score 15-22 here
+- occasion: score this STRICTLY based on whether this specific outfit actually works for "${occasion}":
+  • 22-25 ONLY if the outfit is clearly built for "${occasion}" (e.g. a party dress for "party night", athletic wear for "gym")
+  • 17-21 if it works well but isn't specifically tailored for "${occasion}"
+  • 12-16 if it's a passable but awkward choice for "${occasion}"
+  • Below 12 if there's a real mismatch in formality, dress code, or vibe for "${occasion}"
+  ASK YOURSELF: would this outfit raise eyebrows or feel out of place at "${occasion}"? Be honest.
 
 OUTPUT RULES:
 - Be enthusiastic and specific in the verdict — name the exact aesthetic you see
@@ -90,14 +95,11 @@ function enforceMinimums(rating) {
   // Score floor
   if (score < 65) score = 65;
 
-  // Hard cap occasion — model always maxes this out, cap at 22
-  occasion = Math.min(occasion, 22);
-
   // Clamp all sub-scores to valid ranges
   fit      = Math.max(1, Math.min(25, fit));
   color    = Math.max(1, Math.min(25, color));
   style    = Math.max(1, Math.min(25, style));
-  occasion = Math.max(1, Math.min(22, occasion));
+  occasion = Math.max(1, Math.min(25, occasion));
 
   // Scale breakdown to match the total score
   const sum = fit + color + style + occasion;
@@ -113,9 +115,8 @@ function enforceMinimums(rating) {
   let diff = score - (fit + color + style + occasion);
   for (const k of ['fit', 'color', 'style', 'occasion']) {
     if (diff === 0) break;
-    const maxVal = k === 'occasion' ? 22 : 25;
     const cur = k === 'fit' ? fit : k === 'color' ? color : k === 'style' ? style : occasion;
-    const adj = diff > 0 ? Math.min(maxVal - cur, diff) : Math.max(1 - cur, diff);
+    const adj = diff > 0 ? Math.min(25 - cur, diff) : Math.max(1 - cur, diff);
     if (k === 'fit')        fit      += adj;
     else if (k === 'color') color    += adj;
     else if (k === 'style') style    += adj;
