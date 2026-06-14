@@ -161,51 +161,43 @@ function vibeOccasionScore(vibe, occasion) {
     return 19;
   }
 
-  return null; // unknown occasion — trust the model
+  if (/travel|trip|airport|vacation/.test(o)) {
+    if (isAthleisure || isCasualVibe) return 22;
+    if (isStreet)     return 20;
+    if (isBusiness)   return 17;
+    if (isElegant)    return 13;
+    return 18;
+  }
+
+  return null; // unknown occasion — default 18 used in caller
 }
 
 function enforceMinimums(rating) {
   let { score, breakdown } = rating;
-  let { fit = 17, color = 17, style = 17, occasion = 14 } = breakdown || {};
+  let { fit = 17, color = 17, style = 17 } = breakdown || {};
 
-  // Clamp inputs to valid range
-  fit      = Math.max(1, Math.min(25, Math.round(+fit)      || 17));
-  color    = Math.max(1, Math.min(25, Math.round(+color)    || 17));
-  style    = Math.max(1, Math.min(25, Math.round(+style)    || 17));
-  occasion = Math.max(1, Math.min(25, Math.round(+occasion) || 14));
+  // Clamp model's fit/color/style (we replace occasion entirely)
+  fit   = Math.max(1, Math.min(25, Math.round(+fit)   || 17));
+  color = Math.max(1, Math.min(25, Math.round(+color) || 17));
+  style = Math.max(1, Math.min(25, Math.round(+style) || 17));
 
-  // Override occasion with semantic vibe-matching instead of trusting the model
+  // Replace occasion with semantic vibe+occasion match; 18 if unknown occasion
   const vibeOverride = vibeOccasionScore(cleanVibe(rating.vibe), rating.occasion_label || "");
-  if (vibeOverride !== null) {
-    occasion = vibeOverride;
-  }
+  const occasion = vibeOverride !== null ? vibeOverride : 18;
 
-  // Apply floor per sub-score
-  fit      = Math.max(16, fit);
-  color    = Math.max(16, color);
-  style    = Math.max(16, style);
-  occasion = Math.max(12, occasion);
+  // Keep model's overall score but enforce minimum of 80
+  const target = Math.max(80, Math.min(100, Math.round(+score) || 80));
 
-  // Breakdown is source of truth — score always equals the sum
-  const sum = fit + color + style + occasion;
+  // Budget for fit+color+style = target minus the fixed occasion score
+  const budget = Math.min(Math.max(0, target - occasion), 75); // cap at 3×25
 
-  // Apply overall floor of 75
-  score = Math.max(75, sum);
+  // Distribute budget proportionally using model's fit/color/style ratios
+  const fcsRaw = fit + color + style || 51;
+  fit   = Math.max(1, Math.min(25, Math.round(fit   / fcsRaw * budget)));
+  color = Math.max(1, Math.min(25, Math.round(color / fcsRaw * budget)));
+  style = Math.max(1, Math.min(25, Math.round(style / fcsRaw * budget)));
 
-  // If floor pushed score above sum, distribute the extra onto the top sub-scores
-  let extra = score - sum;
-  for (const k of ['fit', 'color', 'style', 'occasion']) {
-    if (extra <= 0) break;
-    const cur = k === 'fit' ? fit : k === 'color' ? color : k === 'style' ? style : occasion;
-    const add = Math.min(25 - cur, extra);
-    if (k === 'fit')        fit      += add;
-    else if (k === 'color') color    += add;
-    else if (k === 'style') style    += add;
-    else                    occasion += add;
-    extra -= add;
-  }
-
-  // score is always exactly the sum — never diverges
+  // Score is always exactly the sum — mathematically impossible to mismatch
   score = fit + color + style + occasion;
 
   return { ...rating, score, breakdown: { fit, color, style, occasion }, vibe: cleanVibe(rating.vibe) };
