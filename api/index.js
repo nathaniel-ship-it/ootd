@@ -24,18 +24,16 @@ BREAKDOWN — score each of these INDEPENDENTLY out of 25:
 - fit (1-25): How well the clothes fit and flatter the body
 - color (1-25): How well the colors and patterns work together
 - style (1-25): How on-trend and cohesive the overall aesthetic is
-- occasion (1-25): How appropriate is this specific outfit for "${occasion}"?
-  OCCASION RUBRIC — be honest, don't default to 25:
-  · 22-25 only if the outfit is clearly made for "${occasion}" (athletic wear for gym, evening dress for date night, business attire for work)
-  · 16-21 if it works reasonably well for "${occasion}" without standing out as wrong
-  · 10-15 if it's a questionable or awkward choice for "${occasion}"
-  · Below 10 if it's clearly the wrong vibe or formality level for "${occasion}"
-  Ask yourself: would this outfit look out of place at a "${occasion}"?
+- occasion (1-25): How appropriate is this outfit for "${occasion}"?
+  · 22-25: Outfit is clearly built for "${occasion}" (gym wear → gym, suit → work, evening dress → date night)
+  · 16-21: Works reasonably well for "${occasion}" without looking wrong
+  · 10-15: Questionable or awkward for "${occasion}"
+  · Below 10: Clearly wrong vibe or formality for "${occasion}"
 
-Set your "score" equal to fit + color + style + occasion (they must add up exactly).
+Set your "score" equal to fit + color + style + occasion exactly.
 
 OUTPUT RULES:
-- vibe: 2-4 words, real aesthetic names from TikTok/Pinterest only: "Quiet Luxury", "Dark Academia", "Clean Girl", "Coastal Cowgirl", "Old Money", "Streetwear", "Soft Boy", "Tomboy Chic", "Mob Wife", "Indie Sleaze", "Gorpcore", "Balletcore", "Coquette", "Techwear", "Preppy", "Y2K", "Boho Luxe", "Corporate Baddie", "Skater Grunge", "Athleisure"
+- vibe: 2-4 words, real aesthetic names only: "Quiet Luxury", "Dark Academia", "Clean Girl", "Coastal Cowgirl", "Old Money", "Streetwear", "Soft Boy", "Tomboy Chic", "Mob Wife", "Indie Sleaze", "Gorpcore", "Balletcore", "Coquette", "Techwear", "Preppy", "Y2K", "Boho Luxe", "Corporate Baddie", "Skater Grunge", "Athleisure"
 - verdict: 1-2 sentences, enthusiastic and specific about the aesthetic
 - pros: 2 specific compliments
 - cons: 1-2 constructive suggestions
@@ -44,7 +42,7 @@ OUTPUT RULES:
 Reply ONLY with valid JSON, no markdown:
 {"score":80,"breakdown":{"fit":22,"color":21,"style":20,"occasion":17},"vibe":"Clean Girl","verdict":"Effortless and put-together — the neutral palette does the heavy lifting here.","tags":["minimal","clean","neutral"],"pros":["Proportions are balanced and flattering","Color story is cohesive"],"cons":["Could use one statement piece"],"upgrade":"Add a simple gold necklace to elevate the whole look."}
 
-Note: score = 22+21+20+17 = 80. The breakdown must always sum exactly to score. Occasion is 17 here because jeans and a top for "everyday" is fine but not optimized for any specific setting.`;
+Note: score = 22+21+20+17 = 80. The breakdown must always sum exactly to score.`;
 }
 
 const AESTHETICS = [
@@ -79,6 +77,93 @@ function cleanVibe(vibe) {
   return "Clean Girl";
 }
 
+// Map (vibe, occasion) → occasion score override using semantic matching.
+// Returns null to use the model's own score; returns a number to override.
+function vibeOccasionScore(vibe, occasion) {
+  const v = vibe.toLowerCase();
+  const o = occasion.toLowerCase();
+
+  // Occasion buckets
+  const isGym      = /gym|workout|exercise|sport|fitness|running|yoga/.test(o);
+  const isWork     = /work|office|business|meeting|professional|interview/.test(o);
+  const isDateNight= /date|dinner|romantic|night out/.test(o);
+  const isParty    = /party|club|bar|night|festival/.test(o);
+  const isCasual   = /casual|everyday|errands|brunch|weekend|coffee/.test(o);
+  const isFormal   = /formal|gala|wedding|black.?tie|ceremony/.test(o);
+  const isBeach    = /beach|pool|vacation|summer/.test(o);
+  const isOutdoor  = /hike|hiking|outdoor|camping|nature/.test(o);
+
+  // Vibe buckets
+  const isAthleisure  = /athleisure|gorpcore|sport/.test(v);
+  const isElegant     = /old money|quiet luxury|mob wife|coquette|balletcore/.test(v);
+  const isStreet      = /streetwear|skater|grunge|hypebeast|techwear|indie sleaze/.test(v);
+  const isBusiness    = /corporate|business|preppy|smart casual/.test(v);
+  const isCasualVibe  = /clean girl|casual|soft boy|tomboy|y2k|boho/.test(v);
+  const isMaximal     = /mob wife|maximalist|edgy/.test(v);
+
+  if (isGym) {
+    if (isAthleisure) return 24;
+    if (isStreet)     return 17;
+    if (isElegant)    return 8;
+    if (isBusiness)   return 6;
+    return 14;
+  }
+  if (isWork) {
+    if (isBusiness)   return 24;
+    if (isElegant)    return 20;
+    if (isCasualVibe) return 16;
+    if (isStreet)     return 10;
+    if (isAthleisure) return 7;
+    return 14;
+  }
+  if (isDateNight) {
+    if (isElegant)    return 24;
+    if (isMaximal)    return 22;
+    if (isCasualVibe) return 18;
+    if (isStreet)     return 16;
+    if (isAthleisure) return 9;
+    return 17;
+  }
+  if (isParty) {
+    if (isElegant || isMaximal) return 23;
+    if (isStreet)     return 21;
+    if (isCasualVibe) return 17;
+    if (isAthleisure) return 10;
+    return 18;
+  }
+  if (isFormal) {
+    if (isElegant)    return 24;
+    if (isBusiness)   return 18;
+    if (isCasualVibe) return 12;
+    if (isStreet)     return 8;
+    if (isAthleisure) return 5;
+    return 12;
+  }
+  if (isBeach) {
+    if (isAthleisure || isCasualVibe) return 23;
+    if (isStreet)     return 17;
+    if (isElegant)    return 12;
+    if (isBusiness)   return 6;
+    return 16;
+  }
+  if (isOutdoor) {
+    if (isAthleisure) return 24;
+    if (isCasualVibe || isStreet) return 18;
+    if (isElegant || isBusiness)  return 9;
+    return 15;
+  }
+  if (isCasual) {
+    if (isCasualVibe) return 23;
+    if (isStreet)     return 21;
+    if (isAthleisure) return 19;
+    if (isBusiness)   return 16;
+    if (isElegant)    return 14;
+    return 19;
+  }
+
+  return null; // unknown occasion — trust the model
+}
+
 function enforceMinimums(rating) {
   let { score, breakdown } = rating;
   let { fit = 17, color = 17, style = 17, occasion = 14 } = breakdown || {};
@@ -89,53 +174,39 @@ function enforceMinimums(rating) {
   style    = Math.max(1, Math.min(25, Math.round(+style)    || 17));
   occasion = Math.max(1, Math.min(25, Math.round(+occasion) || 14));
 
-  // Compute sum and use it as the score (breakdown is source of truth)
-  let sum = fit + color + style + occasion;
-
-  // Apply floor: if total is too low, scale everything up
-  if (sum < 65) {
-    const r = 65 / sum;
-    fit      = Math.round(fit * r);
-    color    = Math.round(color * r);
-    style    = Math.round(style * r);
-    occasion = Math.round(occasion * r);
-    // Re-clamp after scaling up
-    fit      = Math.max(1, Math.min(25, fit));
-    color    = Math.max(1, Math.min(25, color));
-    style    = Math.max(1, Math.min(25, style));
-    occasion = Math.max(1, Math.min(25, occasion));
-    sum = fit + color + style + occasion;
+  // Override occasion with semantic vibe-matching instead of trusting the model
+  const vibeOverride = vibeOccasionScore(cleanVibe(rating.vibe), rating.occasion_label || "");
+  if (vibeOverride !== null) {
+    occasion = vibeOverride;
   }
 
-  // If model gave a separate overall score, use it but reconcile
-  score = Math.max(65, Math.round(+score) || sum);
+  // Apply floor per sub-score
+  fit      = Math.max(16, fit);
+  color    = Math.max(16, color);
+  style    = Math.max(16, style);
+  occasion = Math.max(12, occasion);
 
-  // If score differs from breakdown sum, scale breakdown to match score
-  if (sum !== score && sum > 0) {
-    const r = score / sum;
-    fit      = Math.round(fit * r);
-    color    = Math.round(color * r);
-    style    = Math.round(style * r);
-    occasion = Math.round(occasion * r);
-    // Re-clamp after scaling (values can exceed 25 when scaling up)
-    fit      = Math.max(1, Math.min(25, fit));
-    color    = Math.max(1, Math.min(25, color));
-    style    = Math.max(1, Math.min(25, style));
-    occasion = Math.max(1, Math.min(25, occasion));
-  }
+  // Breakdown is source of truth — score always equals the sum
+  const sum = fit + color + style + occasion;
 
-  // Fix any remaining rounding drift so sub-scores sum exactly to score
-  let diff = score - (fit + color + style + occasion);
+  // Apply overall floor of 75
+  score = Math.max(75, sum);
+
+  // If floor pushed score above sum, distribute the extra onto the top sub-scores
+  let extra = score - sum;
   for (const k of ['fit', 'color', 'style', 'occasion']) {
-    if (diff === 0) break;
+    if (extra <= 0) break;
     const cur = k === 'fit' ? fit : k === 'color' ? color : k === 'style' ? style : occasion;
-    const adj = diff > 0 ? Math.min(25 - cur, diff) : Math.max(1 - cur, diff);
-    if (k === 'fit')        fit      += adj;
-    else if (k === 'color') color    += adj;
-    else if (k === 'style') style    += adj;
-    else                    occasion += adj;
-    diff -= adj;
+    const add = Math.min(25 - cur, extra);
+    if (k === 'fit')        fit      += add;
+    else if (k === 'color') color    += add;
+    else if (k === 'style') style    += add;
+    else                    occasion += add;
+    extra -= add;
   }
+
+  // score is always exactly the sum — never diverges
+  score = fit + color + style + occasion;
 
   return { ...rating, score, breakdown: { fit, color, style, occasion }, vibe: cleanVibe(rating.vibe) };
 }
@@ -188,6 +259,8 @@ export default {
 
     try {
       const raw = JSON.parse(match[0]);
+      // Attach occasion label so enforceMinimums can use it for vibe matching
+      raw.occasion_label = occasion;
       const rating = enforceMinimums(raw);
       return json(rating);
     } catch {
