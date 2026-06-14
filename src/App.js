@@ -174,6 +174,7 @@ const DARK = {
   text:"#fff", muted:"rgba(255,255,255,0.6)", faint:"rgba(255,255,255,0.25)",
   accent:"#a8ff78", gold:"#FFD166", red:"#e05555",
   card:"#fff", cardText:"#000",
+  softCard:"rgba(255,255,255,0.05)", softBorder:"rgba(255,255,255,0.1)",
   navBg:"rgba(8,8,8,0.97)", navBorder:"rgba(255,255,255,0.12)",
   inputBg:"#1a1a1a", inputBorder:"rgba(255,255,255,0.15)", inputText:"#fff",
   authCard:"#141414", authTab:"#1e1e1e", authTabActive:"#fff", authTabActiveText:"#000",
@@ -186,6 +187,7 @@ const LIGHT = {
   text:"#111", muted:"rgba(0,0,0,0.5)", faint:"rgba(0,0,0,0.28)",
   accent:"#2a7a2a", gold:"#a06800", red:"#b83030",
   card:"#111", cardText:"#fff",
+  softCard:"rgba(0,0,0,0.04)", softBorder:"rgba(0,0,0,0.1)",
   navBg:"rgba(250,250,248,0.97)", navBorder:"rgba(0,0,0,0.08)",
   inputBg:"#f2f0ec", inputBorder:"rgba(0,0,0,0.12)", inputText:"#111",
   authCard:"#fff", authTab:"#f2f0ec", authTabActive:"#111", authTabActiveText:"#fff",
@@ -615,7 +617,7 @@ function HistoryPage({email, dark, onRate, onUpgrade, isPro}) {
       {/* Stats */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
         {[["🔥",streak>0?`${streak}d`:"0d","Streak"],["◎",avg,"Avg"],["✦",best,"Best"]].map(([icon,val,label])=>(
-          <div key={label} style={{background:T.bg3,borderRadius:16,padding:"16px 10px",textAlign:"center",border:`1px solid ${T.border}`}}>
+          <div key={label} style={{background:T.softCard,borderRadius:16,padding:"16px 10px",textAlign:"center",border:`1px solid ${T.softBorder}`}}>
             <div style={{fontSize:16,marginBottom:4}}>{icon}</div>
             <div style={{fontSize:22,fontWeight:800,fontFamily:"'Playfair Display',Georgia,serif",color:T.text,lineHeight:1}}>{val}</div>
             <div style={{fontSize:8,color:T.muted,letterSpacing:2,textTransform:"uppercase",marginTop:4}}>{label}</div>
@@ -733,7 +735,7 @@ function StyleProfilePage({email, dark, isPro, onUpgrade}) {
           <div style={{fontSize:8,color:T.muted,letterSpacing:4,textTransform:"uppercase",marginBottom:14}}>Your Aesthetic</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {topTags.map((t,i)=>(
-              <span key={t} style={{fontSize:i===0?15:10,fontWeight:i===0?800:400,fontFamily:i===0?"'Playfair Display',Georgia,serif":"'DM Mono',monospace",letterSpacing:i===0?-0.5:1.5,textTransform:"uppercase",padding:i===0?"8px 18px":"6px 14px",borderRadius:20,background:T.bg3,color:T.text,border:`1px solid ${T.border2}`}}>{t}</span>
+              <span key={t} style={{fontSize:i===0?15:10,fontWeight:i===0?800:400,fontFamily:i===0?"'Playfair Display',Georgia,serif":"'DM Mono',monospace",letterSpacing:i===0?-0.5:1.5,textTransform:"uppercase",padding:i===0?"8px 18px":"6px 14px",borderRadius:20,background:T.softCard,color:T.text,border:`1px solid ${T.softBorder}`}}>{t}</span>
             ))}
           </div>
         </div>
@@ -1772,7 +1774,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                     </div>
 
                     {result.breakdown&&(
-                      <div style={{background:T.bg3,borderRadius:14,padding:18,marginBottom:14,border:`1px solid ${T.border}`}}>
+                      <div style={{background:T.softCard,borderRadius:14,padding:18,marginBottom:14,border:`1px solid ${T.softBorder}`}}>
                         <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:14}}>Score Breakdown</p>
                         {[["Fit & Silhouette",result.breakdown.fit,25],["Color Coordination",result.breakdown.color,25],["Style Coherence",result.breakdown.style,25],["Occasion Match",result.breakdown.occasion,25]].map(([label,val,max])=>(
                           <div key={label} style={{marginBottom:10}}>
@@ -1793,17 +1795,17 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                     </div>
 
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-                      <div style={{background:T.bg3,borderRadius:14,padding:16,border:`1px solid ${T.border}`}}>
+                      <div style={{background:T.softCard,borderRadius:14,padding:16,border:`1px solid ${T.softBorder}`}}>
                         <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Working ✓</p>
                         {result.pros?.map((p,i)=><p key={i} style={{fontSize:11,color:T.accent,marginBottom:6,lineHeight:1.5}}>{p}</p>)}
                       </div>
-                      <div style={{background:T.bg3,borderRadius:14,padding:16,border:`1px solid ${T.border}`}}>
+                      <div style={{background:T.softCard,borderRadius:14,padding:16,border:`1px solid ${T.softBorder}`}}>
                         <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginBottom:10}}>Fix This ✗</p>
                         {result.cons?.map((c,i)=><p key={i} style={{fontSize:11,color:T.text,marginBottom:6,lineHeight:1.5}}>{c}</p>)}
                       </div>
                     </div>
 
-                    <div style={{background:T.bg3,borderRadius:14,padding:16,marginBottom:20,border:`1px solid ${T.border}`}}>
+                    <div style={{background:T.softCard,borderRadius:14,padding:16,marginBottom:20,border:`1px solid ${T.softBorder}`}}>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
                         <p style={{fontSize:8,color:T.muted,letterSpacing:3,textTransform:"uppercase"}}>Upgrade Move</p>
                       </div>
