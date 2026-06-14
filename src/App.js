@@ -1582,11 +1582,13 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
     const baseScore = rand(74,91) + occasionBonus;
     const score = Math.min(98, baseScore);
 
-    const fit = rand(17,24,1);
-    const color = rand(16,24,2);
-    const style = rand(16,23,3);
-    const occ = Math.min(25, score - fit - color - style + rand(13,22,4));
-    const breakdown = {fit, color, style, occasion: Math.max(10, occ)};
+    const fit = rand(18,24);
+    const color = rand(17,24);
+    const style = rand(17,23);
+    const occ = rand(14,22);
+    const sum = fit + color + style + occ;
+    const scaledScore = Math.max(score, sum);
+    const breakdown = {fit, color, style, occasion: occ};
 
     const vibes = {
       everyday:["Off-Duty But Make It Fashion","Elevated Basics Energy","Quiet Confidence","Effortlessly Unbothered","Clean Girl Adjacent"],
@@ -1641,7 +1643,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
     const todayLabelFb = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
     const isFirstTodayFb = !(getUserData(user.email)?.history||[]).some(h=>h.date===todayLabelFb);
     const thumbFb = await createThumbnail(imageB64);
-    const r = {score, breakdown, vibe, verdict, tags, pros, cons, upgrade:upgrades, occasion, imageB64, thumbnail:thumbFb};
+    const r = {score:scaledScore, breakdown, vibe, verdict, tags, pros, cons, upgrade:upgrades, occasion, imageB64, thumbnail:thumbFb};
     setResult(r);
     recordRating(user.email, r);
     setUsageLeft(getUsageLeft(user.email));
