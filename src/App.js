@@ -1585,10 +1585,10 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
     const baseScore = rand(74,91) + occasionBonus;
     const score = Math.min(98, baseScore);
 
-    const fit = rand(20,24);
-    const color = rand(19,24);
-    const style = rand(19,23);
-    const occ = rand(16,22);
+    const fit = rand(22,25);
+    const color = rand(21,25);
+    const style = rand(21,24);
+    const occ = rand(19,23);
     const breakdown = {fit, color, style, occasion: occ};
 
     const vibes = {

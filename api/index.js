@@ -103,62 +103,60 @@ function vibeOccasionScore(vibe, occasion) {
 
   if (isGym) {
     if (isAthleisure) return 24;
-    if (isStreet)     return 17;
-    if (isElegant)    return 8;
-    if (isBusiness)   return 6;
-    return 14;
+    if (isStreet)     return 20;
+    if (isCasualVibe) return 19;
+    return 18;
   }
   if (isWork) {
     if (isBusiness)   return 24;
-    if (isElegant)    return 20;
-    if (isCasualVibe) return 16;
-    if (isStreet)     return 10;
-    if (isAthleisure) return 7;
-    return 14;
+    if (isElegant)    return 22;
+    if (isCasualVibe) return 19;
+    if (isStreet)     return 17;
+    if (isAthleisure) return 16;
+    return 18;
   }
   if (isDateNight) {
-    if (isElegant)    return 24;
-    if (isMaximal)    return 22;
-    if (isCasualVibe) return 18;
-    if (isStreet)     return 16;
-    if (isAthleisure) return 9;
-    return 17;
+    if (isElegant || isMaximal) return 24;
+    if (isCasualVibe) return 21;
+    if (isStreet)     return 20;
+    if (isAthleisure) return 17;
+    return 20;
   }
   if (isParty) {
-    if (isElegant || isMaximal) return 23;
-    if (isStreet)     return 21;
-    if (isCasualVibe) return 17;
-    if (isAthleisure) return 10;
-    return 18;
+    if (isElegant || isMaximal) return 24;
+    if (isStreet)     return 22;
+    if (isCasualVibe) return 20;
+    if (isAthleisure) return 17;
+    return 20;
   }
   if (isFormal) {
     if (isElegant)    return 24;
-    if (isBusiness)   return 18;
-    if (isCasualVibe) return 12;
-    if (isStreet)     return 8;
-    if (isAthleisure) return 5;
-    return 12;
+    if (isBusiness)   return 21;
+    if (isCasualVibe) return 18;
+    if (isStreet)     return 16;
+    if (isAthleisure) return 16;
+    return 18;
   }
   if (isBeach) {
     if (isAthleisure || isCasualVibe) return 23;
-    if (isStreet)     return 17;
-    if (isElegant)    return 12;
-    if (isBusiness)   return 6;
-    return 16;
+    if (isStreet)     return 20;
+    if (isElegant)    return 17;
+    if (isBusiness)   return 16;
+    return 19;
   }
   if (isOutdoor) {
     if (isAthleisure) return 24;
-    if (isCasualVibe || isStreet) return 18;
-    if (isElegant || isBusiness)  return 9;
-    return 15;
+    if (isCasualVibe || isStreet) return 20;
+    if (isElegant || isBusiness)  return 17;
+    return 19;
   }
   if (isCasual) {
     if (isCasualVibe) return 23;
-    if (isStreet)     return 21;
-    if (isAthleisure) return 19;
-    if (isBusiness)   return 16;
-    if (isElegant)    return 14;
-    return 19;
+    if (isStreet)     return 22;
+    if (isAthleisure) return 21;
+    if (isBusiness)   return 19;
+    if (isElegant)    return 18;
+    return 21;
   }
 
   if (/travel|trip|airport|vacation/.test(o)) {
@@ -185,8 +183,8 @@ function enforceMinimums(rating) {
   const vibeOverride = vibeOccasionScore(cleanVibe(rating.vibe), rating.occasion_label || "");
   const occasion = vibeOverride !== null ? vibeOverride : 18;
 
-  // Keep model's overall score but enforce minimum of 85
-  const target = Math.max(85, Math.min(100, Math.round(+score) || 85));
+  // Keep model's overall score but enforce minimum of 88
+  const target = Math.max(88, Math.min(100, Math.round(+score) || 88));
 
   // Budget for fit+color+style = target minus the fixed occasion score
   const budget = Math.min(Math.max(0, target - occasion), 75); // cap at 3×25
