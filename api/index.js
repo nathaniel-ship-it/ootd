@@ -185,8 +185,8 @@ function enforceMinimums(rating) {
   const vibeOverride = vibeOccasionScore(cleanVibe(rating.vibe), rating.occasion_label || "");
   const occasion = vibeOverride !== null ? vibeOverride : 18;
 
-  // Keep model's overall score but enforce minimum of 80
-  const target = Math.max(80, Math.min(100, Math.round(+score) || 80));
+  // Keep model's overall score but enforce minimum of 85
+  const target = Math.max(85, Math.min(100, Math.round(+score) || 85));
 
   // Budget for fit+color+style = target minus the fixed occasion score
   const budget = Math.min(Math.max(0, target - occasion), 75); // cap at 3×25

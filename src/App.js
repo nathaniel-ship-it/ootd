@@ -506,7 +506,8 @@ function AnalyzingScreen({imageB64, imageMime, dark}) {
 
 // ── Share Card ──
 function ShareCard({result,imageB64,imageMime}) {
-  const score = result.score;
+  const bd = result.breakdown||{};
+  const score = (bd.fit||0)+(bd.color||0)+(bd.style||0)+(bd.occasion||0)||result.score;
   const scoreColor = "#000";
   return (
     <div style={{background:"#fff",borderRadius:24,fontFamily:"'DM Mono',monospace",maxWidth:300,margin:"0 auto",overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
@@ -1492,7 +1493,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
   const fileRef = useRef();
 
   useEffect(()=>{
-    if(result?.score){let i=0;const iv=setInterval(()=>{i+=2;setAnimScore(Math.min(i,result.score));if(i>=result.score)clearInterval(iv);},18);return()=>clearInterval(iv);}
+    if(result?.score){const bd=result.breakdown||{};const s=(bd.fit||0)+(bd.color||0)+(bd.style||0)+(bd.occasion||0)||result.score;let i=0;const iv=setInterval(()=>{i+=2;setAnimScore(Math.min(i,s));if(i>=s)clearInterval(iv);},18);return()=>clearInterval(iv);}
   },[result]);
 
   // Initialize RevenueCat and verify pro status against Apple on every launch
@@ -1558,9 +1559,11 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
       const todayLabel = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
       const isFirstToday = !(getUserData(user.email)?.history||[]).some(h=>h.date===todayLabel);
       const thumb = await createThumbnail(imageB64);
+      const bd = p.breakdown || {fit:20,color:20,style:20,occasion:18};
+      const bdScore = (bd.fit||0)+(bd.color||0)+(bd.style||0)+(bd.occasion||0);
       const r = {
-        score:Math.min(100,Math.max(0,Number(p.score)||75)),
-        breakdown:p.breakdown||{fit:18,color:18,style:18,occasion:18},
+        score: bdScore || Math.min(100,Math.max(0,Number(p.score)||80)),
+        breakdown: bd,
         vibe:p.vibe||"Mystery Fit", verdict:p.verdict||"Interesting look.",
         tags:Array.isArray(p.tags)?p.tags:["casual"],
         pros:Array.isArray(p.pros)?p.pros:["Solid base"],
@@ -1582,12 +1585,10 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
     const baseScore = rand(74,91) + occasionBonus;
     const score = Math.min(98, baseScore);
 
-    const fit = rand(18,24);
-    const color = rand(17,24);
-    const style = rand(17,23);
-    const occ = rand(14,22);
-    const sum = fit + color + style + occ;
-    const scaledScore = Math.max(score, sum);
+    const fit = rand(20,24);
+    const color = rand(19,24);
+    const style = rand(19,23);
+    const occ = rand(16,22);
     const breakdown = {fit, color, style, occasion: occ};
 
     const vibes = {
@@ -1643,7 +1644,8 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
     const todayLabelFb = new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"});
     const isFirstTodayFb = !(getUserData(user.email)?.history||[]).some(h=>h.date===todayLabelFb);
     const thumbFb = await createThumbnail(imageB64);
-    const r = {score:scaledScore, breakdown, vibe, verdict, tags, pros, cons, upgrade:upgrades, occasion, imageB64, thumbnail:thumbFb};
+    const mockScore = fit + color + style + occ;
+    const r = {score:mockScore, breakdown, vibe, verdict, tags, pros, cons, upgrade:upgrades, occasion, imageB64, thumbnail:thumbFb};
     setResult(r);
     recordRating(user.email, r);
     setUsageLeft(getUsageLeft(user.email));
@@ -1763,7 +1765,7 @@ function App({user,logout,setPro,removePro,setAvatar,setOnboarded}) {
                       <div style={{position:"relative",display:"inline-block",marginBottom:16}}>
                         <ScoreRing score={animScore} size={160} dark={dark}/>
                         <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-                          <div style={{fontSize:52,fontWeight:800,color:result.score>=80?T.accent:result.score>=65?(dark?"#FFD166":"#c48800"):T.red,lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif",letterSpacing:-2}}>{result.score}</div>
+                          <div style={{fontSize:52,fontWeight:800,color:result.score>=80?T.accent:result.score>=65?(dark?"#FFD166":"#c48800"):T.red,lineHeight:1,fontFamily:"'Playfair Display',Georgia,serif",letterSpacing:-2}}>{(result.breakdown?.fit||0)+(result.breakdown?.color||0)+(result.breakdown?.style||0)+(result.breakdown?.occasion||0)||result.score}</div>
                           <div style={{fontSize:9,color:T.faint,letterSpacing:2,marginTop:2}}>/100</div>
                         </div>
                       </div>
